@@ -1,0 +1,244 @@
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : Main program body
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.
+  *
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
+  *
+  ******************************************************************************
+
+  Project : STM32F1 main.c Example
+  Author  : Jaesung Oh
+  TEXT Encoding : UTF-8
+
+  Attention
+  This software component is licensed under the BSD 3-Clause License.
+  You may not use this file except in compliance with the License. 
+  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+
+  Compiler  : STM32CubeIDE 1.11.0 / STM32CubeF1 Firmware Package V1.8.4
+  MCU type  : STM32F103RB (NUCLEO-F103RB)
+  Crystal   : Ext Clock 8MHz
+  CoreClock : 72Mhz
+
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+
+
+/* USER CODE BEGIN Includes */
+
+/* [사용자 인클루드] */
+#include <stdio.h>
+#include "defines.h"
+#include "tim_F1.h"
+#include "uart_F1.h"
+#include "cmd_func.h"
+#include "button.h"
+
+/* USER CODE END Includes */
+
+
+/* USER CODE BEGIN PV */
+
+/* [전역 변수] */
+uint32_t UID[3]; //Unique device ID
+uint32_t UID32;
+
+volatile uint32_t gSYS_Count;  //카운터
+volatile uint8_t gFL_SYS_Init; //초기화 상태 플레그
+volatile uint8_t gFL_10ms, gFL_50ms, gFL_100ms, gFL_500ms, gFL_1s; //반복 플레그
+
+/* USER CODE END PV */
+
+
+/* USER CODE BEGIN 0 */
+
+/* [printf() 리디렉션] */
+#ifdef __GNUC__
+ //GCC
+ int _write(int file, char *ptr, int len)
+ {
+  /* Implement your write code here, this is used by puts and printf */
+  int index;
+
+  for(index=0 ; index<len ; index++)
+  {
+    // Your target output function
+    #if SWV_Trace_EN
+    ITM_SendChar(*ptr++);
+    #else
+    UART_TXcharNB(DBG_UART, *(ptr+index));
+    //UART_TXchar(DBG_UART, *(ptr+index));
+    #endif
+  }
+  return len;
+ }
+#elif
+ //KEIL, IAR
+ int fputc(int ch, FILE *f)
+ {
+  #if SWV_Trace_EN
+  ITM_SendChar( (uint32_t)ch );
+  #else
+  UART_TXcharNB(DBG_UART, (char)ch);
+  //UART_TXchar(DBG_UART, (char)ch);
+  #endif
+
+  return ch;
+ }
+#endif
+
+/* [인터럽트 콜백함수] */
+
+void TIM_PeriodElapsedCallback(TIM_TypeDef *TIMx)
+{
+  switch ( (uint32_t)TIMx )
+  {
+    case (uint32_t)BASE_TIM: // 1ms 주기
+      {
+        gSYS_Count++;
+
+
+        if(gFL_SYS_Init)
+        {
+          //1ms
+          {
+
+          }
+          //10ms
+          if(( (gSYS_Count + 1) % 10)==0)
+          {
+            gFL_10ms = 1;
+          }
+          //50ms
+          if(( (gSYS_Count + 3) % 50)==0)
+          {
+            gFL_50ms = 1;
+          }
+          //100ms
+          if(( (gSYS_Count + 5) % 100)==0)
+          {
+            gFL_100ms = 1;
+          }
+          //500ms
+          if(( (gSYS_Count + 7) % 500)==0)
+          {
+            gFL_500ms = 1;
+          }
+          //1초
+          if(( (gSYS_Count + 9) % 1000)==0)
+          {
+            gFL_1s = 1;
+          }
+        }
+      }
+      break;
+
+    default:
+      break;
+  }
+}
+
+/* USER CODE END 0 */
+
+
+  /* USER CODE BEGIN 2 */
+
+  /* [셋업] */
+
+  //Unique device ID 읽어오기
+  UID[0] = *(volatile uint32_t *)UID_BASE;
+  UID[1] = *(volatile uint32_t *)(UID_BASE+4);
+  UID[2] = *(volatile uint32_t *)(UID_BASE+8);
+
+  //GPIO 초기화
+  LED_ON();
+
+  //반복타이머 동작
+  BASE_TIM_Enable(BASE_TIM, BASE_TIM_FREQ);
+
+  //UART 송신버퍼 생성 및 초기화
+  {
+    setvbuf(stdout, NULL, _IONBF, 0); // 즉시 printf 가 송신될수 있도록 stdout buffer size를 0으로 설정
+
+    //UART_SetBaud(DBG_UART, 115200);
+    //HAL_Delay(1);
+    UART_TXB_Init(DBG_UART, 1024);
+    UART_RXB_Init(DBG_UART, 128);
+  }
+
+  //Debugging message
+  {
+    printf("%c[2J",27); //VT100 clear screen
+    printf("%c[1;1H", 27);
+    printf("\r\nUnique device ID: 0x %08lX %08lX %08lX\r\n",UID[2],UID[1],UID[0]);
+    printf("HCLK:%lu PCLK2:%lu PCLK1:%lu \r\n",HAL_RCC_GetHCLKFreq(), HAL_RCC_GetPCLK2Freq(), HAL_RCC_GetPCLK1Freq());
+    printf("Compile Data & Time: %s, %s\r\n", __DATE__, __TIME__);
+  }
+
+  //Debugging message
+  {
+    printf("\r\nProgram Start...\r\n");
+    UART_WiteTXcpltNB(DBG_UART);
+    printf("cmd>");
+  }
+
+  //초기화 완료 플레그 설정
+  gFL_SYS_Init = 1;
+
+  //DBG UART 수신인터럽트 동작
+  LL_USART_EnableIT_RXNE(DBG_UART);
+
+  /* USER CODE END 2 */
+
+
+    /* USER CODE BEGIN 3 */
+
+    /* [루프] */
+
+    if(gFL_10ms)
+    {
+      gFL_10ms = 0;
+      BTN_TIM10ms_Process();
+    }
+
+    if(gFL_50ms)
+    {
+      gFL_50ms = 0;
+
+    }
+
+    if(gFL_100ms)
+    {
+      gFL_100ms = 0;
+
+    }
+
+    if(gFL_500ms)
+    {
+      gFL_500ms = 0;
+      LED_TOGGLE();
+    }
+
+    if(gFL_1s)
+    {
+      gFL_1s = 0;
+
+    }
+
+    Button_Loop_Process();
+
+    while(UART_RXB_Count(DBG_UART) != 0)
+      DBG_RxProcess(DBG_UART);
+
+  }
+  /* USER CODE END 3 */
