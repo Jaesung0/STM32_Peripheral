@@ -2,6 +2,11 @@
   Project : STM32F1 플레시 마지막 1K 공간에 사용자데이터 저장
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
+  
+  Attention
+  This software component is licensed under the BSD 3-Clause License.
+  You may not use this file except in compliance with the License. 
+  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
 
 .ld 파일에 플레시 마지막 1K 공간을 사용자데이터 저장용으로 예약
 MEMORY
@@ -10,11 +15,6 @@ MEMORY
   FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 63K
   USER     (rx)    : ORIGIN = 0x800FC00,   LENGTH = 1K
 }
-
-  Attention
-  This software component is licensed under the BSD 3-Clause License.
-  You may not use this file except in compliance with the License. 
-  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
  ----------------------------------------------------------------------------*/
 #include "main.h"
 #include "defines.h"
