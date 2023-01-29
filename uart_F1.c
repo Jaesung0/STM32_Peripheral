@@ -535,7 +535,6 @@ void UART_WiteTXcpltNB(USART_TypeDef *USARTx)
   }
 }
 
-
 //수신데이터 있음 인터럽트 처리
 /* stm32f1xx_it.c 의 USARTx_IRQHandler 에 추가 할 내용
  * //Receive Data Rgister Not Empty
@@ -602,6 +601,7 @@ uint8_t UART_RXdataPop(USART_TypeDef *USARTx)
   uint8_t RxData = 0;
   uint8_t RXNE_En = 0;
 
+  //수신데이터 있음 인터럽트 비활성화
   if( UART_IsEnabledIT_RXNE(USARTx) )
   {
     RXNE_En = 1;
@@ -664,6 +664,7 @@ uint8_t UART_RXdataPop(USART_TypeDef *USARTx)
       break;
   }
 
+  //수신데이터 있음 인터럽트 활성화
   if(RXNE_En)
     UART_EnableIT_RXNE(USARTx);
 
@@ -733,13 +734,9 @@ void UART_RXdataPush(USART_TypeDef *USARTx, uint8_t RxData)
     case (uint32_t)USART1:
       if((U1RXB.buf == NULL) || (U1RXB.count >= U1RXB.size))
         return; //버퍼가 선언되지 않았거나 남은공간이 없는경우
-
-
       U1RXB.buf[U1RXB.rear] = RxData; //버퍼에 데이터 추가
       U1RXB.rear = (U1RXB.rear+1)%U1RXB.size;
       U1RXB.count++;
-
-
       break;
    #endif
 
