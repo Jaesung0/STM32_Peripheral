@@ -22,7 +22,6 @@
 
 #define BTN_LONG_TIME        200 //2초
 
-
 static volatile BtnValue_t gBtnNow, gBtnPast = BTN_RELEASE;
 static volatile uint16_t gBTN_Cnt;
 
@@ -69,7 +68,7 @@ void Button_Loop_Process(void)
 
   if(Btn)
   {
-    del_CmdLine();
+    //del_CmdLine();
     printf(" Key: ");
     switch(Btn)
     {
@@ -100,7 +99,7 @@ void Button_Loop_Process(void)
         break;
     }
     printf("\r\ncmd>");
-    print_CmdBuf();
+    //print_CmdBuf();
 
     gBtnPast = Btn;
     gBtnNow = BTN_NONE;
