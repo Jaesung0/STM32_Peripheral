@@ -9,6 +9,7 @@
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
 
 .ld 파일에 플레시 마지막 1K 공간을 사용자데이터 저장용으로 예약
+ 제품마다 SRAM 및 플레시 크기가 다르므로 주의
 MEMORY
 {
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 20K
@@ -17,10 +18,12 @@ MEMORY
 }
  ----------------------------------------------------------------------------*/
 #include "main.h"
-#include "defines.h"
+//#include "defines.h"
 #include "flash_user.h"
 
-#define FLASH_USER_PAGE            ((uint32_t)0x0800FC00) //1 Kbytes
+                                 //64K                    128K                   254K
+                                 //((uint32_t)0x0800FC00) ((uint32_t)0x0801FC00) ((uint32_t)0x0803FC00)
+#define FLASH_USER_PAGE            ((uint32_t)0x0800FC00) 
 #define FLASH_READ_WORD(ADDR)      (*(volatile uint32_t *)(ADDR))
 
 //플래시 사용자영역 지우기
