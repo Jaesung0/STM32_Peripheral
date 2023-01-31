@@ -3,11 +3,6 @@
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
 
-  Attention
-  This software component is licensed under the BSD 3-Clause License.
-  You may not use this file except in compliance with the License. 
-  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
-
   -- main.c 에 추가 --
 #define UART_DBG           USART1 //디버그 메시지 UART
   
@@ -562,7 +557,7 @@ void UART_RxCpltCallback(USART_TypeDef *USARTx)
   }
 
   RxData = UART_ReceiveData8(USARTx); 
-  UART_RXdataPush(USARTx, RxData);
+  UART_RXbytePush(USARTx, RxData);
 }
 
 //UART 수신버퍼에 있는 데이터크기 확인
@@ -600,8 +595,8 @@ uint8_t UART_RXB_Count(USART_TypeDef *USARTx)
   }
 }
 
-//UART 수신버퍼에서 데이터 추출(큐에서 front 삭제)
-uint8_t UART_RXdataPop(USART_TypeDef *USARTx)
+//UART 수신버퍼에서 1바이트 데이터 추출(큐에서 front 삭제)
+uint8_t UART_RXbytePop(USART_TypeDef *USARTx)
 {
   uint8_t RxData = 0;
   uint8_t RXNE_En = 0;
@@ -677,7 +672,7 @@ uint8_t UART_RXdataPop(USART_TypeDef *USARTx)
 }
 
 //UART 수신버퍼에서 데이터 확인(큐에서 front 삭제 안함)
-uint8_t UART_RXdataPeek(USART_TypeDef *USARTx)
+uint8_t UART_RXbytePeek(USART_TypeDef *USARTx)
 {
   uint8_t RxData = 0;
 
@@ -731,7 +726,7 @@ uint8_t UART_RXdataPeek(USART_TypeDef *USARTx)
 }
 
 //UART 수신버퍼에 1byte 데이터 추가
-void UART_RXdataPush(USART_TypeDef *USARTx, uint8_t RxData)
+void UART_RXbytePush(USART_TypeDef *USARTx, uint8_t RxData)
 {
   switch ( (uint32_t)USARTx )
   {
@@ -790,6 +785,26 @@ void UART_RXdataPush(USART_TypeDef *USARTx, uint8_t RxData)
   }
 }
 
+//UART 수신버퍼에 다수의 데이터 추가
+void UART_RXdataPush(USART_TypeDef *USARTx, void *data, uint16_t len)
+{
+  uint8_t RXNE_En = 0;
+  
+  //수신데이터 있음 인터럽트 비활성화
+  if( UART_IsEnabledIT_RXNE(USARTx) )
+  {
+    RXNE_En = 1;
+    UART_DisableIT_RXNE(USARTx);
+  }
+
+  for(uint8_t i=0; i<len; i++)
+    UART_RXbytePush(USARTx, *(uint8_t*)data++);
+
+  //수신데이터 있음 인터럽트 활성화
+  if(RXNE_En)
+    UART_EnableIT_RXNE(USARTx);
+}
+
 //UART 수신버퍼에 문자열 추가, 최대 255문자,
 void UART_RXstringPush(USART_TypeDef *USARTx, void *string)
 {
@@ -805,7 +820,7 @@ void UART_RXstringPush(USART_TypeDef *USARTx, void *string)
 
   while(*(uint8_t*)string != '\0')
   {
-    UART_RXdataPush(USARTx, *(uint8_t*)string++);
+    UART_RXbytePush(USARTx, *(uint8_t*)string++);
     
     if(i++ > 254)
       break;
@@ -869,7 +884,7 @@ void UART_RXdataClear(USART_TypeDef *USARTx)
     UART_EnableIT_RXNE(USARTx);
 }
 
-//지정된 UART로 출력
+//지정된 UART로 출력, 최대 255문자
 int UART_Printf(USART_TypeDef *USARTx, const char *format, ...)
 {
   char buf[256] = {0,};

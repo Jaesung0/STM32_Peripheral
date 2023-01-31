@@ -40,7 +40,7 @@
 #define UART_IsActiveFlag_RXNE(UARTX) (UARTX)->SR & 0x00000020
 #define UART_IsActiveFlag_TC(UARTX)   (UARTX)->SR & 0x00000040
 #define UART_IsActiveFlag_TXE(UARTX)  (UARTX)->SR & 0x00000080
-#define USART_ClearFlag_TC(UARTX)     (UARTX)->SR &= ~(0x00000040)
+#define UART_ClearFlag_TC(UARTX)      (UARTX)->SR &= ~(0x00000040)
 #define UART_TransmitData8(UARTX)     (UARTX)->DR
 #define UART_ReceiveData8(UARTX)      (UARTX)->DR
 
@@ -66,12 +66,13 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx); //송신데이터 없음 인�
 void UART_WiteTXcpltNB(USART_TypeDef *USARTx); //UART 송신버퍼가 비워질때까지 대기
 void UART_RxCpltCallback(USART_TypeDef *USARTx); //수신데이터 있음 인터럽트 처리
 uint8_t UART_RXB_Count(USART_TypeDef *USARTx); //UART 수신버퍼에 있는 데이터크기 확인
-uint8_t UART_RXdataPop(USART_TypeDef *USARTx); //UART 수신버퍼에서 데이터 추출(큐에서 front 삭제)
-uint8_t UART_RXdataPeek(USART_TypeDef *USARTx); //UART 수신버퍼에서 데이터 확인(큐에서 front 삭제 안함)
-void UART_RXdataPush(USART_TypeDef *USARTx, uint8_t RxData); //UART 수신버퍼에 1byte 데이터 추가
+uint8_t UART_RXbytePop(USART_TypeDef *USARTx); //UART 수신버퍼에서 1바이트 데이터 추출(큐에서 front 삭제)
+uint8_t UART_RXbytePeek(USART_TypeDef *USARTx); //UART 수신버퍼에서 1바이트 데이터 확인(큐에서 front 삭제 안함)
+void UART_RXbytePush(USART_TypeDef *USARTx, uint8_t RxData); //UART 수신버퍼에 1byte 데이터 추가
+void UART_RXdataPush(USART_TypeDef *USARTx, void *data, uint16_t len); //UART 수신버퍼에 다수의 데이터 추가
 void UART_RXstringPush(USART_TypeDef *USARTx, void *string); //UART 수신버퍼에 문자열 추가
 void UART_RXdataClear(USART_TypeDef *USARTx); //UART 수신버퍼 비우기
-int UART_Printf(USART_TypeDef *USARTx, const char *format, ...); //지정된 UART로 출력
+int UART_Printf(USART_TypeDef *USARTx, const char *format, ...); //지정된 UART로 출력, 최대 255문자
 
 #ifdef __cplusplus
 }
