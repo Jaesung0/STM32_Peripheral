@@ -19,10 +19,11 @@
  // Voltage divide가 없는 RANK는 {  0,  0} 으로 적음
  const uint16_t gADC1_VolDvi_Table[ADC1_NBR_OF_CH][2] =
  {//{R1(상단),R2(하단)}
-    {  0,  0}, //RANK1, Voltage divider 없음
-    { 62, 30}, //RANK2, R1: 62k, R2: 30k
-    { 30, 71}  //RANK3, R1: 30k, R2: 71k
-               //RANK4...
+    {   0,   0}, //RANK1, Voltage divider 없음
+    { 100, 100}, //RANK2, R1: 100k, R2: 100k
+    { 100, 100}, //RANK3, R1: 100k, R2: 100k
+    { 100, 100}, //RANK4, R1: 100k, R2: 100k
+    { 100, 100}, //RANK5, R1: 100k, R2: 100k
  };
 #endif
 
@@ -55,7 +56,7 @@ void ADC1_TIM_DMA_Enable(void)
   LL_TIM_SetPrescaler(ADC1_TRIG_TIM, (Prescaler-1));
   LL_TIM_SetAutoReload(ADC1_TRIG_TIM, (tmp_u32-1));
 
-  //HAL_ADCEx_Calibration_Start(&hadc1); //ADC 자체 교정실행(ADC 내부커패시터)
+  HAL_ADCEx_Calibration_Start(&hadc1); //ADC 자체 교정실행(ADC 내부커패시터)
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)ADC1_DMA, ADC1_NBR_OF_CH);
 
   LL_TIM_SetCounter(ADC1_TRIG_TIM, 0);
@@ -86,43 +87,64 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
     idx1_1st = (idx1_1st < (ADC1_NBR_OF_OVS)) ? idx1_1st+1 : idx1_1st;  //ADC1_NBR_OF_OVS 까지만 증가
     idx1_loop = (idx1_loop < (ADC1_NBR_OF_OVS - 1)) ? idx1_loop+1 : 0; //0부터 (ADC1_NBR_OF_OVS - 1) 순환
 
-    //전압값으로 변환
-    //V_ADD(mV) =  1200(mV) * 4095 / VREFINT_DATA
-    //          = 4914000 / VREFINT_DATA
 
-    //V_CHx(mV) = V_ADD(mV) / 4095 * ADC_DATAx
-    //          = (4914000 / VREFINT_DATA) / 4095 * ADC_DATAx
-    //          = 1200 * ADC_DATAx / VREFINT_DATA
+    #if ADC1_VREFINT_RANK //내부 1.2V 전압값 이용
+      //VREF+(mV) =  1200(mV) * 4095 / VREFINT_DATA
+      //          = 4914000 / VREFINT_DATA
+      gADC1_mV[ADC1_VREFINT_RANK-1] = 4914000.0 / (float)gADC1_ave[ADC1_VREFINT_RANK-1] + 0.5;
 
-    gADC1_mV[ADC1_VREFINT_RANK-1] = 4914000 / gADC1_ave[ADC1_VREFINT_RANK-1];
+      for(uint8_t rank = 0; rank < ADC1_NBR_OF_CH; rank++ )
+      {
+        if(rank == ADC1_VREFINT_RANK-1)
+          continue;
 
-    for(uint8_t rank = 0; rank < ADC1_NBR_OF_CH; rank++ )
-    {
-      if(rank == ADC1_VREFINT_RANK-1)
-        continue;
-
-      #if ADC1_USE_VOLT_DVI
-        if( gADC1_VolDvi_Table[rank][1] == 0 ) //이번 RANK 는 Voltage divider 가 없음
-        {
-          gADC1_mV[rank] = 1200UL * (uint32_t)gADC1_ave[rank] / (uint32_t)gADC1_ave[ADC1_VREFINT_RANK-1];
-        }
-        else //이번 RANK 는 Voltage divider 가 있음
-        {
-          //Vin = Vout / (R2 / (R2 + R1))
-          //    = (1200 * ADC_DATAx / VREFINT_DATA) / (R2 / (R2 + R1))
-          //    = (1200UL * ADC_DATAx * R2 + 1200UL * ADC_DATAx * R1) / ( R2 * VREFINT_DATA)
-          gADC1_mV[rank] =   (1200UL * (uint32_t)gADC1_ave[rank] * (uint32_t)gADC1_VolDvi_Table[rank][1] + 1200UL * (uint32_t)gADC1_ave[rank] * (uint32_t)gADC1_VolDvi_Table[rank][0])
-                           / ( (uint32_t)gADC1_ave[ADC1_VREFINT_RANK-1] * (uint32_t)gADC1_VolDvi_Table[rank][1]);
-        }
-      #else
-        gADC1_mV[rank] = 1200UL * (uint32_t)gADC1_ave[rank] / (uint32_t)gADC1_ave[ADC1_VREFINT_RANK-1];
-      #endif
-    }
-
+        #if ADC1_USE_VOLT_DVI
+          if( gADC1_VolDvi_Table[rank][1] == 0 ) //이번 RANK 는 Voltage divider 가 없음
+          {
+            //Volt(mV)  = VREF+(mV) * ADC_DATAx / 4095
+            //          = (4914000 / VREFINT_DATA) * ADC_DATAx / 4095
+            //          = 1200 * ADC_DATAx / VREFINT_DATA
+            gADC1_mV[rank] = (float)(1200 * gADC1_ave[rank]) / (float)gADC1_ave[ADC1_VREFINT_RANK-1] + 0.5;
+          }
+          else //이번 RANK 는 Voltage divider 가 있음
+          {
+            //Vin = Vout / (R2 / (R1 + R2))
+            //    = (1200 * ADC_DATAx / VREFINT_DATA) / (R2 / (R1 + R2))
+            //    = ((1200 * R1 + 1200 * R2) * ADC_DATAx) / (R2 * VREFINT_DATA)
+            gADC1_mV[rank] = ((1200.0 * (float)gADC1_VolDvi_Table[rank][0] + 1200.0 * (float)gADC1_VolDvi_Table[rank][1]) * (float)gADC1_ave[rank])
+                              / ((float)gADC1_VolDvi_Table[rank][1] * (float)gADC1_ave[ADC1_VREFINT_RANK-1])
+                              + 0.5;
+          }
+        #else
+          gADC1_mV[rank] = (float)(1200 * gADC1_ave[rank]) / (float)gADC1_ave[ADC1_VREFINT_RANK-1] + 0.5;
+        #endif
+      }
+    #else //ADC1_VREF_VOLT값 이용
+      for(uint8_t rank = 0; rank < ADC1_NBR_OF_CH; rank++ )
+      {
+        #if ADC1_USE_VOLT_DVI
+          if( gADC1_VolDvi_Table[rank][1] == 0 ) //이번 RANK 는 Voltage divider 가 없음
+          {
+            //Volt(mV) = ADC1_VREF_VOLT * ADC_DATAx / 4095
+            gADC1_mV[rank] = (float)(ADC1_VREF_VOLT * gADC1_ave[rank]) / 4095.0 + 0.5;
+          }
+          else
+          {
+            //Vin = Vout / (R2 / (R1 + R2))
+            //    = (ADC1_VREF_VOLT * ADC_DATAx / 4095) / (R2 / (R1 + R2))
+            //    = ((R1 + R2) * ADC1_VREF_VOLT * ADC_DATAx) / (4095 * R2)
+            gADC1_mV[rank] = ((float)(gADC1_VolDvi_Table[rank][0] + gADC1_VolDvi_Table[rank][1]) * (float)ADC1_VREF_VOLT * (float)gADC1_ave[rank])
+                             / (4095.0 * (float)gADC1_VolDvi_Table[rank][1])
+                             + 0.5;
+          }
+        #else
+          gADC1_mV[rank] = (float)(ADC1_VREF_VOLT * gADC1_ave[rank]) / 4095.0 + 0.5;
+        #endif
+      }
+    #endif
     //디버그
     //for(uint8_t ch = 0; ch < ADC1_NBR_OF_CH; ch++ )
     //  printf(" [%04u %04u %04umV]", ADC1_DMA[ch], gADC1_ave[ch], gADC1_mV[ch]);
-
     //printf("\r\n");
   }
 }
