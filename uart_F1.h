@@ -12,11 +12,21 @@
 #endif
 
 //사용하는 UART 설정
-#define USE_USART1  0
-#define USE_USART2  1
-#define USE_USART3  0
-#define USE_UART4   0
-#define USE_UART5   0
+#ifndef USE_USART1
+ #define USE_USART1  1
+#endif
+#ifndef USE_USART2
+ #define USE_USART2  0
+#endif
+#ifndef USE_USART3
+ #define USE_USART3  0
+#endif
+#ifndef USE_USART4
+ #define USE_UART4   0
+#endif
+#ifndef USE_UART5
+ #define USE_UART5   0
+#endif
 
 #define UART_Enable(UARTX)            (UARTX)->CR1 |= 0x00000001
 #define UART_Disable(UARTX)           (UARTX)->CR1 &= ~(0x00000001)
