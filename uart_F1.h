@@ -11,6 +11,8 @@
  extern "C" {
 #endif
 
+#include "defines.h"
+
 //사용하는 UART 설정
 #ifndef USE_USART1
  #define USE_USART1  1
