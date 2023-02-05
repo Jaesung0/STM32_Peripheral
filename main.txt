@@ -107,7 +107,6 @@ void TIM_PeriodElapsedCallback(TIM_TypeDef *TIMx)
       {
         gSYS_Count++;
 
-
         if(gFL_SYS_Init)
         {
           //1ms
@@ -170,10 +169,10 @@ void TIM_PeriodElapsedCallback(TIM_TypeDef *TIMx)
   {
     setvbuf(stdout, NULL, _IONBF, 0); // 즉시 printf 가 송신될수 있도록 stdout buffer size를 0으로 설정
 
-    //UART_SetBaud(DBG_UART, 115200);
+    //UART_SetBaud(UART_DBG, 115200);
     //HAL_Delay(1);
-    UART_TXB_Init(DBG_UART, 1024);
-    UART_RXB_Init(DBG_UART, 128);
+    UART_TXB_Init(UART_DBG, 1024);
+    UART_RXB_Init(UART_DBG, 128);
   }
 
   //Debugging message
@@ -188,15 +187,15 @@ void TIM_PeriodElapsedCallback(TIM_TypeDef *TIMx)
   //Debugging message
   {
     printf("\r\nProgram Start...\r\n");
-    UART_WiteTXcpltNB(DBG_UART);
+    UART_WiteTXcpltNB(UART_DBG);
     printf("cmd>");
   }
 
   //초기화 완료 플레그 설정
   gFL_SYS_Init = 1;
 
-  //DBG UART 수신인터럽트 동작
-  LL_USART_EnableIT_RXNE(DBG_UART);
+  //UART_DBG 수신인터럽트 동작
+  UART_EnableIT_RXNE(UART_DBG);
 
   /* USER CODE END 2 */
 
@@ -237,8 +236,8 @@ void TIM_PeriodElapsedCallback(TIM_TypeDef *TIMx)
 
     Button_Loop_Process();
 
-    while(UART_RXB_Count(DBG_UART) != 0)
-      DBG_RxProcess(DBG_UART);
+    while(UART_RXB_Count(UART_DBG) != 0)
+      DBG_RxProcess(UART_DBG);
 
   }
   /* USER CODE END 3 */
