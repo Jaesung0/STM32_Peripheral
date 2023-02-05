@@ -13,7 +13,8 @@
 /* [사용자 디파인] */
 
 //디버그 메시지 UART
-#define DBG_UART          USART2
+#define UART_DBG          USART1
+#define USE_USART1        1
 
 //반복 타이머
 #define BASE_TIM          TIM2
