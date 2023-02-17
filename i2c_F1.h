@@ -31,7 +31,7 @@ extern "C" {
 #define I2C_IsActiveFlag_BERR(I2Cx)     ((I2Cx)->SR1 & 0x00000100) //Bus Error
 #define I2C_IsActiveFlag_ARLO(I2Cx)     ((I2Cx)->SR1 & 0x00000200) //Arbitration Lost
 #define I2C_IsActiveFlag_AF(I2Cx)       ((I2Cx)->SR1 & 0x00000400) //Acknowledge Failure
-#define I2C_IsActiveFlag_BUSY(I2Cx)     ((I2Cx)->SR2 & 0x00000010) //Bus Busy
+#define I2C_IsActiveFlag_BUSY(I2Cx)     ((I2Cx)->SR2 & 0x00000002) //Bus Busy
 
 #define I2C_ClearFlag_BERR(I2Cx)        ((I2Cx)->SR1 &= ~(0x00000100))
 #define I2C_ClearFlag_ARLO(I2Cx)        ((I2Cx)->SR1 &= ~(0x00000200))
