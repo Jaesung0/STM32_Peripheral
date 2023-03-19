@@ -3,6 +3,11 @@
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
 
+  Attention
+  This software component is licensed under the BSD 3-Clause License.
+  You may not use this file except in compliance with the License.
+  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+
   -- main.c 에 추가 --
 #define UART_DBG           USART1 //디버그 메시지 UART
   
@@ -59,7 +64,7 @@
 #include "uart_F1.h"
 
 #if USE_USART1
-  Queue U1TXB;// = {NULL, 0, 0, 0, 0};
+  Queue U1TXB;// = {NULL, 0, 0, 0};
   Queue U1RXB;
 #endif
 
@@ -164,7 +169,7 @@ void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U1TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U1TXB.size = size;
-      U1TXB.front = U1TXB.rear = U1TXB.count = 0;
+      U1TXB.front = U1TXB.rear = 0;
       break;
    #endif
 
@@ -174,7 +179,7 @@ void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U2TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U2TXB.size = size;
-      U2TXB.front = U2TXB.rear = U2TXB.count = 0;
+      U2TXB.front = U2TXB.rear = 0;
       break;
    #endif
 
@@ -184,7 +189,7 @@ void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U3TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U3TXB.size = size;
-      U3TXB.front = U3TXB.rear = U3TXB.count = 0;
+      U3TXB.front = U3TXB.rear = 0;
       break;
    #endif
 
@@ -194,7 +199,7 @@ void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U4TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U4TXB.size = size;
-      U4TXB.front = U4TXB.rear = U4TXB.count = 0;
+      U4TXB.front = U4TXB.rear = 0;
       break;
    #endif
 
@@ -204,7 +209,7 @@ void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U5TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U5TXB.size = size;
-      U5TXB.front = U5TXB.rear = U5TXB.count = 0;
+      U5TXB.front = U5TXB.rear = 0;
       break;
    #endif
 
@@ -231,7 +236,7 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U1RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U1RXB.size = size;
-      U1RXB.front = U1RXB.rear = U1RXB.count = 0;
+      U1RXB.front = U1RXB.rear = 0;
       break;
    #endif
 
@@ -241,7 +246,7 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U2RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U2RXB.size = size;
-      U2RXB.front = U2RXB.rear = U2RXB.count = 0;
+      U2RXB.front = U2RXB.rear = 0;
       break;
    #endif
 
@@ -251,7 +256,7 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U3RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U3RXB.size = size;
-      U3RXB.front = U3RXB.rear = U3RXB.count = 0;
+      U3RXB.front = U3RXB.rear = 0;
       break;
    #endif
 
@@ -261,7 +266,7 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U4RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U4RXB.size = size;
-      U4RXB.front = U4RXB.rear = U4RXB.count = 0;
+      U4RXB.front = U4RXB.rear = 0;
       break;
    #endif
 
@@ -271,7 +276,7 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
         return;
       U5RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
       U5RXB.size = size;
-      U5RXB.front = U5RXB.rear = U5RXB.count = 0;
+      U5RXB.front = U5RXB.rear = 0;
       break;
    #endif
  
@@ -287,6 +292,7 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
   //UART_EnableIT_RXNE(USARTx);
 }
 
+
 //UART로 1개 문자 전송, Non-blocking 방식
 void UART_TXcharNB(USART_TypeDef *USARTx, char data)
 {
@@ -297,14 +303,13 @@ void UART_TXcharNB(USART_TypeDef *USARTx, char data)
       if(U1TXB.size == 0)
         return;
 
-      if( U1TXB.count > (U1TXB.size-2) ) //버퍼초과 방지 while(U1TXB.count == U1TXB.size);
+      if( (U1TXB.rear+1)%U1TXB.size == U1TXB.front )
         return;
 
       UART_DisableIT_TXE(USARTx); //송신데이터 없음 인터럽트 비활성화
 
       U1TXB.buf[U1TXB.rear] = data; //버퍼에 추가
       U1TXB.rear = (U1TXB.rear+1)%U1TXB.size;
-      U1TXB.count++;
       break;
    #endif
 
@@ -314,14 +319,13 @@ void UART_TXcharNB(USART_TypeDef *USARTx, char data)
       if(U2TXB.size == 0)
         return;
 
-      if( U2TXB.count > (U2TXB.size-2) ) //while(U2TXB.count == U2TXB.size);
+      if( (U2TXB.rear+1)%U2TXB.size == U2TXB.front )
         return;
 
       UART_DisableIT_TXE(USARTx);
 
       U2TXB.buf[U2TXB.rear] = data;
       U2TXB.rear = (U2TXB.rear+1)%U2TXB.size;
-      U2TXB.count++;
       break;
    #endif
 
@@ -330,14 +334,13 @@ void UART_TXcharNB(USART_TypeDef *USARTx, char data)
       if(U3TXB.size == 0)
         return;
 
-      if( U3TXB.count > (U3TXB.size-2) ) //while(U3TXB.count == U3TXB.size);
+      if( (U3TXB.rear+1)%U3TXB.size == U3TXB.front )
         return;
 
       UART_DisableIT_TXE(USARTx);
 
       U3TXB.buf[U3TXB.rear] = data;
       U3TXB.rear = (U3TXB.rear+1)%U3TXB.size;
-      U3TXB.count++;
       break;
    #endif
 
@@ -346,14 +349,13 @@ void UART_TXcharNB(USART_TypeDef *USARTx, char data)
       if(U4TXB.size == 0)
         return;
 
-      if( U4TXB.count > (U4TXB.size-2) ) //while(U4TXB.count == U4TXB.size);
+      if( (U4TXB.rear+1)%U4TXB.size == U4TXB.front )
         return;
 
       UART_DisableIT_TXE(USARTx);
 
       U4TXB.buf[U4TXB.rear] = data;
       U4TXB.rear = (U4TXB.rear+1)%U4TXB.size;
-      U4TXB.count++;
       break;
    #endif
 
@@ -362,14 +364,13 @@ void UART_TXcharNB(USART_TypeDef *USARTx, char data)
       if(U5TXB.size == 0)
         return;
 
-      if( U5TXB.count > (U5TXB.size-2) ) //while(U5TXB.count == U5TXB.size);
+      if( (U5TXB.rear+1)%U5TXB.size == U5TXB.front )
         return;
 
       UART_DisableIT_TXE(USARTx);
 
       U5TXB.buf[U5TXB.rear] = data;
       U5TXB.rear = (U5TXB.rear+1)%U5TXB.size;
-      U5TXB.count++;
       break;
    #endif
 
@@ -402,7 +403,7 @@ void UART_TXstringNB(USART_TypeDef *USARTx, void *string)
  */
 void UART_TXdataNB(USART_TypeDef *USARTx, void *data, uint16_t len)
 {
-  for(uint8_t i=0; i<len; i++)
+  for(uint16_t i=0; i<len; i++)
     UART_TXcharNB(USARTx, *(uint8_t*)data++);
 }
 
@@ -421,7 +422,7 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx)
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      if((U1TXB.count == 0) || (U1TXB.size == 0)) //송신버퍼 데이터 없음
+      if((U1TXB.rear  == U1TXB.front) || (U1TXB.size == 0)) //송신버퍼 데이터 없음
       {
         UART_DisableIT_TXE(USARTx); //송신데이터 없음 인터럽트 비활성화
         return;
@@ -429,13 +430,12 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx)
 
       UART_TransmitData8(USARTx) = U1TXB.buf[U1TXB.front];
       U1TXB.front = (U1TXB.front+1)%U1TXB.size;
-      U1TXB.count--;
       break;
    #endif
 
    #if USE_USART2
     case (uint32_t)USART2:
-      if((U2TXB.count == 0) || (U2TXB.size == 0))
+      if((U2TXB.rear  == U2TXB.front) || (U2TXB.size == 0))
       {
         UART_DisableIT_TXE(USARTx);
         return;
@@ -443,13 +443,12 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx)
 
       UART_TransmitData8(USARTx) = U2TXB.buf[U2TXB.front];
       U2TXB.front = (U2TXB.front+1)%U2TXB.size;
-      U2TXB.count--;
       break;
    #endif
 
    #if USE_USART3
     case (uint32_t)USART3:
-      if((U3TXB.count == 0) || (U3TXB.size == 0))
+      if((U3TXB.rear  == U3TXB.front) || (U3TXB.size == 0))
       {
         UART_DisableIT_TXE(USARTx);
         return;
@@ -457,13 +456,12 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx)
 
       UART_TransmitData8(USARTx) = U3TXB.buf[U3TXB.front];
       U3TXB.front = (U3TXB.front+1)%U3TXB.size;
-      U3TXB.count--;
       break;
    #endif
 
    #if USE_UART4
     case (uint32_t)UART4:
-      if((U4TXB.count == 0) || (U4TXB.size == 0))
+      if((U4TXB.rear  == U4TXB.front) || (U4TXB.size == 0))
       {
         UART_DisableIT_TXE(USARTx);
         return;
@@ -471,13 +469,12 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx)
 
       UART_TransmitData8(USARTx) = U4TXB.buf[U4TXB.front];
       U4TXB.front = (U4TXB.front+1)%U4TXB.size;
-      U4TXB.count--;
       break;
    #endif
 
    #if USE_UART5
     case (uint32_t)UART5:
-      if((U5TXB.count == 0) || (U5TXB.size == 0))
+      if((U5TXB.rear  == U5TXB.front) || (U5TXB.size == 0))
       {
         UART_DisableIT_TXE(USARTx);
         return;
@@ -485,7 +482,6 @@ void UART_TxEmptyCallback(USART_TypeDef *USARTx)
 
       UART_TransmitData8(USARTx) = U5TXB.buf[U5TXB.front];
       U5TXB.front = (U5TXB.front+1)%U5TXB.size;
-      U5TXB.count--;
       break;
    #endif
    
@@ -502,31 +498,31 @@ void UART_WiteTXcpltNB(USART_TypeDef *USARTx)
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      while(U1TXB.count);
+      while(U1TXB.rear != U1TXB.front);
       break;
    #endif
 
    #if USE_USART2
     case (uint32_t)USART2:
-      while(U2TXB.count);
+      while(U2TXB.rear != U2TXB.front);
       break;
    #endif
 
    #if USE_USART3
     case (uint32_t)USART3:
-      while(U3TXB.count);
+      while(U3TXB.rear != U3TXB.front);
       break;
    #endif
 
    #if USE_UART4
     case (uint32_t)UART4:
-      while(U4TXB.count);
+      while(U4TXB.rear != U4TXB.front);
       break;
    #endif
 
    #if USE_UART5
     case (uint32_t)UART5:
-      while(U5TXB.count);
+      while(U5TXB.rear != U5TXB.front);
       break;
    #endif
 
@@ -549,14 +545,14 @@ void UART_RxCpltCallback(USART_TypeDef *USARTx)
   uint8_t RxData;
 
   //Parity Error, Framing Error 
-  if( UART_IsActiveFlag_PE(USARTx) || UART_IsActiveFlag_FE(USARTx) ) 
+  if( UART_IsActiveFlag_PE(USARTx) )//|| UART_IsActiveFlag_FE(USARTx) )
   {
     //USARTx->SR 을 읽은 후 USARTx->DR 을 읽게되면, USARTx->SR의 플레그가 초기화 됨
     RxData = UART_ReceiveData8(USARTx);
     return;
   }
 
-  RxData = UART_ReceiveData8(USARTx); 
+  RxData = UART_ReceiveData8(USARTx);
   UART_RXbytePush(USARTx, RxData);
 }
 
@@ -567,27 +563,27 @@ uint8_t UART_RXB_Count(USART_TypeDef *USARTx)
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      return U1RXB.count;
+      return (U1RXB.size + U1RXB.rear - U1RXB.front ) % U1RXB.size;
    #endif
 
    #if USE_USART2
     case (uint32_t)USART2:
-      return U2RXB.count;
+      return (U2RXB.size + U2RXB.rear - U2RXB.front ) % U2RXB.size;
    #endif
 
    #if USE_USART3
     case (uint32_t)USART3:
-      return U3RXB.count;
+      return (U3RXB.size + U3RXB.rear - U3RXB.front ) % U3RXB.size;
    #endif
 
    #if USE_UART4
     case (uint32_t)UART4:
-      return U4RXB.count;
+      return (U4RXB.size + U4RXB.rear - U4RXB.front ) % U4RXB.size;
    #endif
 
    #if USE_UART5
     case (uint32_t)UART5:
-      return U5RXB.count;
+      return (U5RXB.size + U5RXB.rear - U5RXB.front ) % U5RXB.size;
    #endif
 
     default:
@@ -599,74 +595,57 @@ uint8_t UART_RXB_Count(USART_TypeDef *USARTx)
 uint8_t UART_RXbytePop(USART_TypeDef *USARTx)
 {
   uint8_t RxData = 0;
-  uint8_t RXNE_En = 0;
-
-  //수신데이터 있음 인터럽트 비활성화
-  if( UART_IsEnabledIT_RXNE(USARTx) )
-  {
-    RXNE_En = 1;
-    UART_DisableIT_RXNE(USARTx);
-  }
 
   switch ( (uint32_t)USARTx )
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      if(U1RXB.count == 0)
+      if(U1RXB.rear == U1RXB.front)
         break; //데이터가 없는경우
        RxData = U1RXB.buf[U1RXB.front];
        U1RXB.front = (U1RXB.front+1)%U1RXB.size;
-       U1RXB.count--;
       break;
    #endif
 
    #if USE_USART2
     case (uint32_t)USART2:
-      if(U2RXB.count == 0)
+      if(U2RXB.rear == U2RXB.front)
         break;
       RxData = U2RXB.buf[U2RXB.front];
       U2RXB.front = (U2RXB.front+1)%U2RXB.size;
-      U2RXB.count--;
       break;
    #endif
 
    #if USE_USART3
     case (uint32_t)USART3:
-      if(U3RXB.count == 0)
+      if(U3RXB.rear == U3RXB.front)
         break;
       RxData = U3RXB.buf[U3RXB.front];
       U3RXB.front = (U3RXB.front+1)%U3RXB.size;
-      U3RXB.count--;
       break;
    #endif
 
    #if USE_UART4
     case (uint32_t)UART4:
-      if(U4RXB.count == 0)
+      if(U4RXB.rear == U4RXB.front)
         break;
       RxData = U4RXB.buf[U4RXB.front];
       U4RXB.front = (U4RXB.front+1)%U4RXB.size;
-      U4RXB.count--;
       break;
    #endif
 
    #if USE_UART5
     case (uint32_t)UART5:
-      if(U5RXB.count == 0)
+      if(U5RXB.rear == U5RXB.front)
         break;
       RxData = U5RXB.buf[U5RXB.front];
       U5RXB.front = (U5RXB.front+1)%U5RXB.size;
-      U5RXB.count--;
       break;
    #endif
    
     default:
       break;
   }
-
-  //수신데이터 있음 인터럽트 활성화
-  if(RXNE_En)
-    UART_EnableIT_RXNE(USARTx);
 
   return RxData;
 }
@@ -680,7 +659,7 @@ uint8_t UART_RXbytePeek(USART_TypeDef *USARTx)
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      if(U1RXB.count == 0)
+      if(U1RXB.rear == U1RXB.front)
         return 0; //데이터가 없는경우
       RxData = U1RXB.buf[U1RXB.front];
       break;
@@ -688,7 +667,7 @@ uint8_t UART_RXbytePeek(USART_TypeDef *USARTx)
 
    #if USE_USART2
     case (uint32_t)USART2:
-      if(U2RXB.count == 0)
+      if(U2RXB.rear == U2RXB.front)
         return 0;
       RxData = U2RXB.buf[U2RXB.front];
       break;
@@ -696,7 +675,7 @@ uint8_t UART_RXbytePeek(USART_TypeDef *USARTx)
 
    #if USE_USART3
     case (uint32_t)USART3:
-      if(U3RXB.count == 0)
+      if(U3RXB.rear == U3RXB.front)
         return 0;
       RxData = U3RXB.buf[U3RXB.front];
       break;
@@ -704,7 +683,7 @@ uint8_t UART_RXbytePeek(USART_TypeDef *USARTx)
 
    #if USE_UART4
     case (uint32_t)UART4:
-      if(U4RXB.count == 0)
+      if(U4RXB.rear == U4RXB.front)
         return 0;
       RxData = U4RXB.buf[U4RXB.front];
       break;
@@ -712,7 +691,7 @@ uint8_t UART_RXbytePeek(USART_TypeDef *USARTx)
 
    #if USE_UART5
     case (uint32_t)UART5:
-      if(U5RXB.count == 0)
+      if(U5RXB.rear == U5RXB.front)
         return 0;
       RxData = U5RXB.buf[U5RXB.front];
       break;
@@ -732,51 +711,46 @@ void UART_RXbytePush(USART_TypeDef *USARTx, uint8_t RxData)
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      if((U1RXB.buf == NULL) || (U1RXB.count >= U1RXB.size))
+      if((U1RXB.buf == NULL) || ((U1RXB.rear+1)%U1RXB.size == U1RXB.front))
         return; //버퍼가 선언되지 않았거나 남은공간이 없는경우
       U1RXB.buf[U1RXB.rear] = RxData; //버퍼에 데이터 추가
       U1RXB.rear = (U1RXB.rear+1)%U1RXB.size;
-      U1RXB.count++;
       break;
    #endif
 
    #if USE_USART2
     case (uint32_t)USART2:
-      if((U2RXB.buf == NULL) || (U2RXB.count >= U2RXB.size))
+      if((U2RXB.buf == NULL) || ((U2RXB.rear+1)%U2RXB.size == U2RXB.front))
         return;
       U2RXB.buf[U2RXB.rear] = RxData;
       U2RXB.rear = (U2RXB.rear+1)%U2RXB.size;
-      U2RXB.count++;
       break;
    #endif
 
    #if USE_USART3
     case (uint32_t)USART3:
-      if((U3RXB.buf == NULL) || (U3RXB.count >= U3RXB.size))
+      if((U3RXB.buf == NULL) || ((U3RXB.rear+1)%U3RXB.size == U3RXB.front))
         return;
       U3RXB.buf[U3RXB.rear] = RxData;
       U3RXB.rear = (U3RXB.rear+1)%U3RXB.size;
-      U3RXB.count++;
       break;
    #endif
 
    #if USE_UART4
     case (uint32_t)UART4:
-      if((U4RXB.buf == NULL) || (U4RXB.count >= U4RXB.size))
+      if((U4RXB.buf == NULL) || ((U4RXB.rear+1)%U4RXB.size == U4RXB.front))
         return;
       U4RXB.buf[U4RXB.rear] = RxData;
       U4RXB.rear = (U4RXB.rear+1)%U4RXB.size;
-      U4RXB.count++;
       break;
    #endif
 
    #if USE_UART5
     case (uint32_t)UART5:
-      if((U5RXB.buf == NULL) || (U5RXB.count >= U5RXB.size))
+      if((U5RXB.buf == NULL) || ((U5RXB.rear+1)%U5RXB.size == U5RXB.front))
         return;
       U5RXB.buf[U5RXB.rear] = RxData;
       U5RXB.rear = (U5RXB.rear+1)%U5RXB.size;
-      U5RXB.count++;
       break;
    #endif
 
@@ -847,31 +821,31 @@ void UART_RXdataClear(USART_TypeDef *USARTx)
   {
    #if USE_USART1
     case (uint32_t)USART1:
-      U1RXB.front = U1RXB.rear = U1RXB.count = 0;
+      U1RXB.front = U1RXB.rear = 0;
       break;
    #endif
 
    #if USE_USART2
     case (uint32_t)USART2:
-      U2RXB.front = U2RXB.rear = U2RXB.count = 0;
+      U2RXB.front = U2RXB.rear = 0;
       break;
    #endif
 
    #if USE_USART3
     case (uint32_t)USART3:
-      U3RXB.front = U3RXB.rear = U3RXB.count = 0;
+      U3RXB.front = U3RXB.rear = 0;
       break;
    #endif
 
    #if USE_UART4
     case (uint32_t)UART4:
-      U4RXB.front = U4RXB.rear = U4RXB.count = 0;
+      U4RXB.front = U4RXB.rear = 0;
       break;
    #endif
 
    #if USE_UART5
     case (uint32_t)UART5:
-      U5RXB.front = U5RXB.rear = U5RXB.count = 0;
+      U5RXB.front = U5RXB.rear = 0;
       break;
    #endif
    
