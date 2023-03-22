@@ -59,10 +59,9 @@
 typedef struct _Queue //Queue 구조체 정의
 {
   uint8_t *buf;
-  volatile uint16_t size;
-  volatile uint16_t front;
-  volatile uint16_t rear;
-  volatile uint16_t count;
+  uint16_t size;
+  uint16_t front;
+  uint16_t rear;
 }Queue;
 
 void UART_SetBaud(USART_TypeDef *USARTx, uint32_t BaudRate); //UART 보드레이트 설정
