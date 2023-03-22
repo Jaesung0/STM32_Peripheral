@@ -23,7 +23,7 @@
 #ifndef USE_USART3
  #define USE_USART3  0
 #endif
-#ifndef USE_USART4
+#ifndef USE_UART4
  #define USE_UART4   0
 #endif
 #ifndef USE_UART5
