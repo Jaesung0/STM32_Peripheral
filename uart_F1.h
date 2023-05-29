@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------------
-  Project : STM32 UART transmit
+  Project : STM32F1 UART
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
   ----------------------------------------------------------------------------*/
@@ -15,7 +15,7 @@
 
 //사용하는 UART 설정
 #ifndef USE_USART1
- #define USE_USART1  1
+ #define USE_USART1  0
 #endif
 #ifndef USE_USART2
  #define USE_USART2  0
@@ -59,9 +59,9 @@
 typedef struct _Queue //Queue 구조체 정의
 {
   uint8_t *buf;
-  uint16_t size;
-  uint16_t front;
-  uint16_t rear;
+  volatile uint16_t size;
+  volatile uint16_t front;
+  volatile uint16_t rear;
 }Queue;
 
 void UART_SetBaud(USART_TypeDef *USARTx, uint32_t BaudRate); //UART 보드레이트 설정
