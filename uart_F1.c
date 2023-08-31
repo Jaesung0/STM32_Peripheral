@@ -24,8 +24,7 @@
      #if SWV_Trace_EN
      ITM_SendChar(*ptr++);
      #else
-     UART_TXcharNB(UART_DBG, *ptr++);
-     //UART_TXchar(UART_DBG, *ptr++);
+     UART_TXcharNB(UART_DBG, *(ptr+index));
      #endif
    }
    return len;
@@ -38,7 +37,6 @@
    ITM_SendChar( (uint32_t)ch );
    #else
    UART_TXcharNB(UART_DBG, (char)ch);
-   //UART_TXchar(UART_DBG, (char)ch);
    #endif
 
    return ch;
