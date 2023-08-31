@@ -1,5 +1,5 @@
  /*----------------------------------------------------------------------------
-  Project :  STM32F1 TIMER (Low Layer)
+  Project : STM32F1 TIMER (Low Layer)
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
   
