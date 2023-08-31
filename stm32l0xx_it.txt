@@ -1,0 +1,166 @@
+/* USER CODE BEGIN Includes */
+
+/* [사용자 includ] */
+#include "uart_trxL0.h"
+
+/* USER CODE END Includes */
+
+/* USER CODE BEGIN 0 */
+
+/* [인터럽트 콜백함수 - weak 속성] */
+void __attribute__((weak)) SYSTICK_Callback(void)
+{
+
+}
+
+void __attribute__((weak)) GPIO_EXTI_Callback(uint32_t ExtiLine)
+{
+  switch(ExtiLine)
+  {
+    case LL_EXTI_LINE_0:
+      break;
+
+    default:
+      break;
+  }
+}
+
+void __attribute__((weak)) TIM_PeriodElapsedCallback(TIM_TypeDef *TIMx)
+{
+  switch ( (uint32_t)TIMx )
+  {
+    case (uint32_t)TIM22:
+
+      break;
+
+    default:
+      break;
+  }
+}
+
+void __attribute__((weak)) UART_RxCpltCallback(USART_TypeDef *USARTx)
+{
+  volatile uint32_t tmpreg = USARTx->RDR;
+  (void)tmpreg;
+}
+
+void __attribute__((weak)) UART_TxCpltCallback(USART_TypeDef *USARTx)
+{
+  //ClearFlag_TC
+  USARTx->ICR = 0x00000040;
+  //DisableIT_TC
+  USARTx->CR1 &= ~(0x00000040);
+}
+
+void __attribute__((weak)) UART_TxEmptyCallback(USART_TypeDef *USARTx)
+{
+  //DisableIT_TXE
+  USARTx->CR1 &= ~(0x00000080);
+}
+
+/* USER CODE END 0 */
+
+
+/**
+  * @brief This function handles System tick timer.
+  */
+void SysTick_Handler(void)
+{
+  /* USER CODE BEGIN SysTick_IRQn 0 */
+
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
+  /* USER CODE BEGIN SysTick_IRQn 1 */
+
+  /* [SysTick 인터럽트 핸들러] */
+  //SYSTICK_Callback();
+
+  /*[MicroSecond delay] */
+  extern volatile uint32_t millis_cnt;
+  millis_cnt++;
+
+  /* USER CODE END SysTick_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line 0 and line 1 interrupts.
+  */
+void EXTI0_1_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI0_1_IRQn 0 */
+
+  /* USER CODE END EXTI0_1_IRQn 0 */
+  if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0) != RESET)
+  {
+    LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
+    /* USER CODE BEGIN LL_EXTI_LINE_0 */
+
+    /* [EXTI0 인터럽트 핸들러] */
+    GPIO_EXTI_Callback(LL_EXTI_LINE_0);
+
+    /* USER CODE END LL_EXTI_LINE_0 */
+  }
+  /* USER CODE BEGIN EXTI0_1_IRQn 1 */
+
+  /* USER CODE END EXTI0_1_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM21 global interrupt.
+  */
+void TIM21_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM21_IRQn 0 */
+
+  /* USER CODE END TIM21_IRQn 0 */
+  /* USER CODE BEGIN TIM21_IRQn 1 */
+
+  /* [타이머21 인터럽트 핸들러] */
+  //TIM Update event
+  if(LL_TIM_IsActiveFlag_UPDATE(TIM21))
+  {
+    //if(LL_TIM_IsEnabledIT_UPDATE(TIM21))
+    //{
+      LL_TIM_ClearFlag_UPDATE(TIM21);
+      TIM_PeriodElapsedCallback(TIM21);
+    //}
+  }
+
+  //모든 타이머21 인터럽트 플레그 초기화
+  TIM21->SR = 0x0000;
+
+  /* USER CODE END TIM21_IRQn 1 */
+}
+
+/**
+  * @brief This function handles LPUART1 global interrupt / LPUART1 wake-up interrupt through EXTI line 28.
+  */
+void LPUART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN LPUART1_IRQn 0 */
+
+  /* USER CODE END LPUART1_IRQn 0 */
+  /* USER CODE BEGIN LPUART1_IRQn 1 */
+
+  /* [LPUART1 인터럽트 핸들러] */
+  //Receive Data Rgister Not Empty
+  if(LL_LPUART_IsActiveFlag_RXNE(LPUART1))
+  {
+    if(LL_LPUART_IsEnabledIT_RXNE(LPUART1))
+      UART_RxCpltCallback(LPUART1);
+  }
+  //Transmission Complete
+  if(LL_LPUART_IsActiveFlag_TC(LPUART1))
+  {
+    if(LL_LPUART_IsEnabledIT_TC(LPUART1))
+      UART_TxCpltCallback(LPUART1);
+  }
+  //Transmit Data Rgister Empty
+  if(LL_LPUART_IsActiveFlag_TXE(LPUART1))
+  {
+    if(LL_LPUART_IsEnabledIT_TXE(LPUART1))
+      UART_TxEmptyCallback(LPUART1);
+  }
+
+  /* USER CODE END LPUART1_IRQn 1 */
+}
