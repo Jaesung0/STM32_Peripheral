@@ -1,7 +1,13 @@
 /*----------------------------------------------------------------------------
-  Project : STM32F7 I2C 
+  Project :  STM32F7 I²C Master (Register)
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
+  매개변수의 DevAddress는 SLA+W 형식
+
+  Attention
+  This software component is licensed under the BSD 3-Clause License.
+  You may not use this file except in compliance with the License.
+  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
   ----------------------------------------------------------------------------*/
 #include "i2c_F7.h"
 #include "delay_us.h"
