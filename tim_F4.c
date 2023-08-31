@@ -1,10 +1,14 @@
  /*----------------------------------------------------------------------------
-  Project :
+  Project :  STM32F4 TIMER (Low Layer)
   Author  : Jaesung Oh
   TEXT Encoding : UTF-8
+  
+  Attention
+  This software component is licensed under the BSD 3-Clause License.
+  You may not use this file except in compliance with the License. 
+  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
   ----------------------------------------------------------------------------*/
 #include "main.h"
-
 #include "timerF4.h"
 
 void BASE_TIM_Enable(TIM_TypeDef *TIMx, uint32_t frequency)
