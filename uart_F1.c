@@ -50,7 +50,7 @@
   //UART_SetBaud(UART_DBG, 115200);
   //HAL_Delay(1);
   UART_TXB_Init(UART_DBG, 1024);
-  UART_RXB_Init(UART_DBG, 64);
+  UART_RXB_Init(UART_DBG, 128);
   
   //DBG UART 수신인터럽트 동작
   UART_EnableIT_RXNE(UART_DBG);
