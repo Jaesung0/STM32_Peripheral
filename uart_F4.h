@@ -33,8 +33,8 @@
  #define USE_USART6  0
 #endif
 
-#define UART_Enable(UARTX)            (UARTX)->CR1 |= 0x00000001
-#define UART_Disable(UARTX)           (UARTX)->CR1 &= ~(0x00000001)
+#define UART_Enable(UARTX)            (UARTX)->CR1 |= 0x00002000
+#define UART_Disable(UARTX)           (UARTX)->CR1 &= ~(0x00002000)
 #define UART_EnableRx(UARTX)          (UARTX)->CR1 |= 0x00000004
 #define UART_DisableRx(UARTX)         (UARTX)->CR1 &= ~(0x00000004)
 #define UART_EnableTx(UARTX)          (UARTX)->CR1 |= 0x00000008
