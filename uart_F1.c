@@ -16,13 +16,14 @@
  //GCC
  int _write(int file, char *ptr, int len)
  {
+   //Implement your write code here, this is used by puts and printf
    int index;
 
    for(index=0 ; index<len ; index++)
    {
      // Your target output function
      #if SWV_Trace_EN
-     ITM_SendChar(*ptr++);
+     ITM_SendChar(*(ptr+index));
      #else
      UART_TXcharNB(UART_DBG, *(ptr+index));
      #endif
@@ -215,9 +216,9 @@ void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
       break;
   }
 
-  //송신 활성화, USART 활성화
-  UART_EnableTx(USARTx);
-  UART_Enable(USARTx);
+  // 송신 활성화, USART 활성화 - MX_USARTx_UART_Init() 에서 실행
+  //UART_EnableTx(USARTx);
+  //UART_Enable(USARTx);
 }
 
 //UART 수신버퍼 생성 및 초기화
@@ -282,9 +283,9 @@ void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
       break;
   }
 
-  //수신 활성화, USART 활성화
-  UART_EnableRx(USARTx);
-  UART_Enable(USARTx);
+  // 수신 활성화, USART 활성화 - MX_USARTx_UART_Init() 에서 실행
+  //UART_EnableRx(USARTx);
+  //UART_Enable(USARTx);
 
   //수신데이터 있음 인터럽트 활성화 - main.c 에서 실행
   //UART_EnableIT_RXNE(USARTx);
