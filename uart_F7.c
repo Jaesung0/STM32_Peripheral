@@ -10,10 +10,8 @@
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
 
   -- main.c 에 추가 --
-#define USE_USART1          1
-#define USART1_TX_BUF_SIZE  1024
-#define USART1_RX_BUF_SIZE  128
-#define UART_DBG            USART1 //디버그 메시지 UART
+#define USE_USART1         1
+#define UART_DBG           USART1 //디버그 메시지 UART
 
 // [printf() 리디렉션] 
 #if (defined __CC_ARM) || (defined __ARMCC_VERSION) || (defined __ICCARM__)
@@ -38,119 +36,56 @@
   setvbuf(stdout, NULL, _IONBF, 0); // 즉시 printf 가 송신될수 있도록 stdout buffer size를 0으로 설정
   //UART_SetBaud(UART_DBG, 115200);
   //HAL_Delay(1);
-  UART_TXB_Init(UART_DBG);
-  UART_RXB_Init(UART_DBG);
+  UART_TXB_Init(UART_DBG, 1024);
+  UART_RXB_Init(UART_DBG, 128);
   
   //DBG UART 수신인터럽트 동작
   UART_EnableIT_RXNE(UART_DBG);
   ----------------------------------------------------------------------------*/
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include "main.h"
 #include "uart_F7.h"
 
 #if USE_USART1
- #ifndef USART1_TX_BUF_SIZE
-  #define USART1_TX_BUF_SIZE  16
- #endif
- #ifndef USART1_RX_BUF_SIZE
-  #define USART1_RX_BUF_SIZE  16
- #endif
   Queue U1TXB;// = {NULL, 0, 0, 0, 0};
   Queue U1RXB;
-  uint8_t U1TxBuf[USART1_TX_BUF_SIZE];
-  uint8_t U1RxBuf[USART1_RX_BUF_SIZE];
 #endif
 
 #if USE_USART2
- #ifndef USART2_TX_BUF_SIZE
-  #define USART2_TX_BUF_SIZE  16
- #endif
- #ifndef USART2_RX_BUF_SIZE
-  #define USART2_RX_BUF_SIZE  16
- #endif
   Queue U2TXB;
   Queue U2RXB;
-  uint8_t U2TxBuf[USART2_TX_BUF_SIZE];
-  uint8_t U2RxBuf[USART2_RX_BUF_SIZE];
 #endif
 
 #if USE_USART3
- #ifndef USART3_TX_BUF_SIZE
-  #define USART3_TX_BUF_SIZE  16
- #endif
- #ifndef USART3_RX_BUF_SIZE
-  #define USART3_RX_BUF_SIZE  16
- #endif
   Queue U3TXB;
   Queue U3RXB;
-  uint8_t U3TxBuf[USART3_TX_BUF_SIZE];
-  uint8_t U3RxBuf[USART3_RX_BUF_SIZE];
 #endif
 
 #if USE_UART4
- #ifndef UART4_TX_BUF_SIZE
-  #define UART4_TX_BUF_SIZE  16
- #endif
- #ifndef UART4_RX_BUF_SIZE
-  #define UART4_RX_BUF_SIZE  16
- #endif
   Queue U4TXB;
   Queue U4RXB;
-  uint8_t U4TxBuf[UART4_TX_BUF_SIZE];
-  uint8_t U4RxBuf[UART4_RX_BUF_SIZE];
 #endif
 
 #if USE_UART5
- #ifndef UART5_TX_BUF_SIZE
-  #define UART5_TX_BUF_SIZE  16
- #endif
- #ifndef UART5_RX_BUF_SIZE
-  #define UART5_RX_BUF_SIZE  16
- #endif
   Queue U5TXB;
   Queue U5RXB;
-  uint8_t U5TxBuf[UART5_TX_BUF_SIZE];
-  uint8_t U5RxBuf[UART5_RX_BUF_SIZE];
 #endif
 
 #if USE_USART6
- #ifndef USART6_TX_BUF_SIZE
-  #define USART6_TX_BUF_SIZE  16
- #endif
- #ifndef USART6_RX_BUF_SIZE
-  #define USART6_RX_BUF_SIZE  16
- #endif
   Queue U6TXB;
   Queue U6RXB;
-  uint8_t U6TxBuf[USART6_TX_BUF_SIZE];
-  uint8_t U6RxBuf[USART6_RX_BUF_SIZE];
 #endif
 
 #if USE_UART7
- #ifndef UART7_TX_BUF_SIZE
-  #define UART7_TX_BUF_SIZE  16
- #endif
- #ifndef UART7_RX_BUF_SIZE
-  #define UART7_RX_BUF_SIZE  16
- #endif
   Queue U7TXB;
   Queue U7RXB;
-  uint8_t U7TxBuf[UART7_TX_BUF_SIZE];
-  uint8_t U7RxBuf[UART7_RX_BUF_SIZE];
 #endif
 
 #if USE_UART8
- #ifndef UART8_TX_BUF_SIZE
-  #define UART8_TX_BUF_SIZE  16
- #endif
- #ifndef UART8_RX_BUF_SIZE
-  #define UART8_RX_BUF_SIZE  16
- #endif
   Queue U8TXB;
   Queue U8RXB;
-  uint8_t U8TxBuf[UART8_TX_BUF_SIZE];
-  uint8_t U8RxBuf[UART8_RX_BUF_SIZE];
 #endif
 
 //USART 보드레이트 설정
@@ -229,16 +164,19 @@ void UART_TXdata(USART_TypeDef *USARTx, void *data, uint16_t len)
 }
 
 //UART 송신버퍼 생성 및 초기화
-void UART_TXB_Init(USART_TypeDef *USARTx)
+void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size)
 {
+  if(size < 16) //버퍼 최소크기 확보
+    size = 16;
+
   switch ( (uint32_t)USARTx )
   {
    #if USE_USART1
     case (uint32_t)USART1:
       if(U1TXB.size) //중복할당 방지
         return;
-      U1TXB.buf = U1TxBuf;
-      U1TXB.size = USART1_TX_BUF_SIZE;
+      U1TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U1TXB.size = size;
       U1TXB.front = U1TXB.rear = 0;
       break;
    #endif
@@ -248,7 +186,7 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
       if(U2TXB.size)
         return;
       U2TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
-      U2TXB.size = U2TxBuf;
+      U2TXB.size = size;
       U2TXB.front = U2TXB.rear = 0;
       break;
    #endif
@@ -257,8 +195,8 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)USART3:
       if(U3TXB.size)
         return;
-      U3TXB.buf = U3TxBuf;
-      U3TXB.size = USART3_TX_BUF_SIZE;
+      U3TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U3TXB.size = size;
       U3TXB.front = U3TXB.rear = 0;
       break;
    #endif
@@ -267,8 +205,8 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART4:
       if(U4TXB.size)
         return;
-      U4TXB.buf = U4TxBuf;
-      U4TXB.size = UART4_TX_BUF_SIZE;
+      U4TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U4TXB.size = size;
       U4TXB.front = U4TXB.rear = 0;
       break;
    #endif
@@ -277,8 +215,8 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART5:
       if(U5TXB.size)
         return;
-      U5TXB.buf = U5TxBuf;
-      U5TXB.size = UART5_TX_BUF_SIZE;
+      U5TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U5TXB.size = size;
       U5TXB.front = U5TXB.rear = 0;
       break;
    #endif
@@ -287,8 +225,8 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)USART6:
       if(U6TXB.size)
         return;
-      U6TXB.buf = U6TxBuf;
-      U6TXB.size = USART6_TX_BUF_SIZE;
+      U6TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U6TXB.size = size;
       U6TXB.front = U6TXB.rear = 0;
       break;
    #endif
@@ -297,8 +235,8 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART7:
       if(U7TXB.size)
         return;
-      U7TXB.buf = U7TxBuf;
-      U7TXB.size = UART7_TX_BUF_SIZE;
+      U7TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U7TXB.size = size;
       U7TXB.front = U7TXB.rear = 0;
       break;
    #endif
@@ -307,8 +245,8 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART8:
       if(U8TXB.size)
         return;
-      U8TXB.buf = U8TxBuf;
-      U8TXB.size = UART8_TX_BUF_SIZE;
+      U8TXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U8TXB.size = size;
       U8TXB.front = U8TXB.rear = 0;
       break;
    #endif
@@ -317,22 +255,25 @@ void UART_TXB_Init(USART_TypeDef *USARTx)
       break;
   }
   
-  //송신 활성화, USART 활성화
-  UART_EnableTx(USARTx);
-  UART_Enable(USARTx);
+  // 송신 활성화, USART 활성화 - MX_USARTx_UART_Init() 에서 실행
+  //UART_EnableTx(USARTx);
+  //UART_Enable(USARTx);
 }
 
 //UART 수신버퍼 생성 및 초기화
-void UART_RXB_Init(USART_TypeDef *USARTx)
+void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size)
 {
+  if(size < 16) //버퍼 최소크기 확보
+    size = 16;
+
   switch ( (uint32_t)USARTx )
   {
    #if USE_USART1
     case (uint32_t)USART1:
       if(U1RXB.size) //중복할당 방지
         return;
-      U1RXB.buf = U1RxBuf;
-      U1RXB.size = USART1_RX_BUF_SIZE;
+      U1RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U1RXB.size = size;
       U1RXB.front = U1RXB.rear = 0;
       break;
    #endif
@@ -341,8 +282,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)USART2:
       if(U2RXB.size)
         return;
-      U2RXB.buf = U2RxBuf;
-      U2RXB.size = USART2_RX_BUF_SIZE;
+      U2RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U2RXB.size = size;
       U2RXB.front = U2RXB.rear = 0;
       break;
    #endif
@@ -351,8 +292,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)USART3:
       if(U3RXB.size)
         return;
-      U3RXB.buf = U3RxBuf;
-      U3RXB.size = USART3_RX_BUF_SIZE;
+      U3RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U3RXB.size = size;
       U3RXB.front = U3RXB.rear = 0;
       break;
    #endif
@@ -361,8 +302,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART4:
       if(U4RXB.size)
         return;
-      U4RXB.buf = U4RxBuf;
-      U4RXB.size = UART4_RX_BUF_SIZE;
+      U4RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U4RXB.size = size;
       U4RXB.front = U4RXB.rear = 0;
       break;
    #endif
@@ -371,8 +312,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART5:
       if(U5RXB.size)
         return;
-      U5RXB.buf = U5RxBuf;
-      U5RXB.size = UART5_RX_BUF_SIZE;
+      U5RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U5RXB.size = size;
       U5RXB.front = U5RXB.rear = 0;
       break;
    #endif
@@ -381,8 +322,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)USART6:
       if(U6RXB.size)
         return;
-      U6RXB.buf = U6RxBuf;
-      U6RXB.size = USART6_RX_BUF_SIZE;
+      U6RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U6RXB.size = size;
       U6RXB.front = U6RXB.rear = 0;
       break;
    #endif
@@ -391,8 +332,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART7:
       if(U7RXB.size)
         return;
-      U7RXB.buf = U7RxBuf
-      U7RXB.size = UART7_RX_BUF_SIZE;
+      U7RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U7RXB.size = size;
       U7RXB.front = U7RXB.rear = 0;
       break;
    #endif
@@ -401,8 +342,8 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
     case (uint32_t)UART8:
       if(U8RXB.size)
         return;
-      U8RXB.buf = U8RxBuf;
-      U8RXB.size = UART8_RX_BUF_SIZE;
+      U8RXB.buf = (uint8_t*)malloc(sizeof(uint8_t)*size);
+      U8RXB.size = size;
       U8RXB.front = U8RXB.rear = 0;
       break;
    #endif
@@ -411,9 +352,9 @@ void UART_RXB_Init(USART_TypeDef *USARTx)
       break;
   }
 
-  //수신 활성화, USART 활성화
-  UART_EnableRx(USARTx);
-  UART_Enable(USARTx);
+  // 수신 활성화, USART 활성화 - MX_USARTx_UART_Init() 에서 실행
+  //UART_EnableRx(USARTx);
+  //UART_Enable(USARTx);
 
   //수신데이터 있음 인터럽트 활성화 - main.c 에서 실행
   //UART_EnableIT_RXNE(USARTx);
