@@ -81,8 +81,8 @@ void UART_SetBaud(USART_TypeDef *USARTx, uint32_t BaudRate); //UART 보드레이
 void UART_TXchar(USART_TypeDef *USARTx, char data);   //UART로 1개 문자 전송, 폴링방식
 void UART_TXstring(USART_TypeDef *USARTx, void *string); //UART로 문자열 전송, 최대 255문자, 폴링방식
 void UART_TXdata(USART_TypeDef *USARTx, void *data, uint16_t len); //UART로 DATA 전송, 폴링방식
-void UART_TXB_Init(USART_TypeDef *USARTx); //UART 송신버퍼 생성 및 초기화
-void UART_RXB_Init(USART_TypeDef *USARTx); //UART 수신버퍼 생성 및 초기화
+void UART_TXB_Init(USART_TypeDef *USARTx, uint16_t size); //UART 송신버퍼 생성 및 초기화
+void UART_RXB_Init(USART_TypeDef *USARTx, uint16_t size); //UART 수신버퍼 생성 및 초기화
 void UART_TXcharNB(USART_TypeDef *USARTx, char data); //UART로 1개 문자 전송, Non-blocking 방식
 void UART_TXstringNB(USART_TypeDef *USARTx, void *string); //UART로 문자열 전송, Non-blocking 방식
 void UART_TXdataNB(USART_TypeDef *USARTx, void *data, uint16_t len); //UART로 다수의 DATA 전송, Non-blocking 방식
