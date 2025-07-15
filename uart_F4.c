@@ -9,29 +9,15 @@
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
 
   -- main.c 에 추가 --
+#define USE_USART1         1
 #define UART_DBG           USART1 //디버그 메시지 UART
 
 //[printf() 리디렉션] 
-#ifdef __GNUC__
- //GCC
- int _write(int file, char *ptr, int len)
- {
-   int index;
-
-   for(index=0 ; index<len ; index++)
-   {
-     // Your target output function
-     #if SWV_Trace_EN
-     ITM_SendChar(*(ptr+index));
-     #else
-     UART_TXcharNB(UART_DBG, *(ptr+index));
-     #endif
-   }
-   return len;
- }
-#elif
- //KEIL, IAR
+#if (defined __CC_ARM) || (defined __ARMCC_VERSION) || (defined __ICCARM__)
  int fputc(int ch, FILE *f)
+#else
+ int __io_putchar(int ch)
+#endif
  {
    #if SWV_Trace_EN
    ITM_SendChar( (uint32_t)ch );
@@ -41,7 +27,7 @@
 
    return ch;
  }
-#endif
+
 
 -- int main(void) 내부에 추가 --
 
