@@ -1,22 +1,24 @@
 /*----------------------------------------------------------------------------
-  Project :  STM32F7 I²C Master (Register)
+  Project : STM32F7 I²C Master (Register)
   Author  : Jaesung Oh
+            https://github.com/Jaesung0/STM32_Peripheral
   TEXT Encoding : UTF-8
+  
   매개변수의 DevAddress는 SLA+W 형식
 
   Attention
   This software component is licensed under the BSD 3-Clause License.
   You may not use this file except in compliance with the License.
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+  This software is provided AS-IS.
   ----------------------------------------------------------------------------*/
+#include "main.h"
 #include "i2c_F7.h"
 #include "delay_us.h"
 
-//매개변수의 DevAddress는 ADD+W 형식
-
 //I2C 종료, StopCondition 으로 변경 및 BUSY 플레그 해제될때 까지 대기
 //반환값: 정상완료 0 / 시간초과 1
-uint8_t I2C_Stop(I2C_TypeDef *I2Cx, uint32_t Timeout)
+static uint8_t I2C_Stop(I2C_TypeDef *I2Cx, uint32_t Timeout)
 {
   uint32_t Tickstart = uwTick;
 

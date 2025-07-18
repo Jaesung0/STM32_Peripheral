@@ -1,6 +1,7 @@
  /*----------------------------------------------------------------------------
   Project :  STM32F1 I²C Busy Flag Erratum (Register)
   Author  : Jaesung Oh
+            https://github.com/Jaesung0/STM32_Peripheral
   TEXT Encoding : UTF-8
 
   I²C 아날로그 필터문제로 인한, Busy Flag가 High 상태로 고정되는 문제 해결
@@ -9,6 +10,7 @@
   This software component is licensed under the BSD 3-Clause License.
   You may not use this file except in compliance with the License.
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+  This software is provided AS-IS.
   ----------------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c_ERR_F1.h"

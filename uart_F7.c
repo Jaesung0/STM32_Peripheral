@@ -1,18 +1,20 @@
  /*----------------------------------------------------------------------------
   Project : STM32F7 UART
   Author  : Jaesung Oh
-  https://github.com/Jaesung0/STM32_Peripheral
+            https://github.com/Jaesung0/STM32_Peripheral
   TEXT Encoding : UTF-8
 
   Attention
   This software component is licensed under the BSD 3-Clause License.
   You may not use this file except in compliance with the License.
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+  This software is provided AS-IS.
 
-  -- main.c 에 추가 --
+  -- 사용자 define 에 추가 --
 #define USE_USART1         1
 #define UART_DBG           USART1 //디버그 메시지 UART
 
+  -- main.c 에 추가 --
 // [printf() 리디렉션] 
 #if (defined __CC_ARM) || (defined __ARMCC_VERSION) || (defined __ICCARM__)
  int fputc(int ch, FILE *f)
@@ -28,7 +30,6 @@
 
    return ch;
  }
-
 
 -- int main(void) 내부에 추가 --
 
@@ -48,44 +49,81 @@
 #include "main.h"
 #include "uart_F7.h"
 
+//User define include
+//#include "User_define.h"
+
+typedef struct _Queue //Queue 구조체 정의
+{
+  uint8_t *buf;
+  volatile uint16_t size;
+  volatile uint16_t front;
+  volatile uint16_t rear;
+}Queue;
+
+//사용하는 UART 설정
+#ifndef USE_USART1
+ #define USE_USART1   0
+#endif
+#ifndef USE_USART2
+ #define USE_USART2   0
+#endif
+#ifndef USE_USART3
+ #define USE_USART3   0
+#endif
+#ifndef USE_UART4
+ #define USE_UART4    0
+#endif
+#ifndef USE_UART5
+ #define USE_UART5    0
+#endif
+#ifndef USE_USART6
+ #define USE_USART6   0
+#endif
+#ifndef USE_UART7
+ #define USE_UART7    0
+#endif
+#ifndef USE_UART8
+ #define USE_UART8    0
+#endif
+
 #if USE_USART1
-  Queue U1TXB;// = {NULL, 0, 0, 0, 0};
-  Queue U1RXB;
+  static Queue U1TXB;// = {NULL, 0, 0, 0, 0};
+  static Queue U1RXB;
 #endif
 
 #if USE_USART2
-  Queue U2TXB;
-  Queue U2RXB;
+  static Queue U2TXB;
+  static Queue U2RXB;
 #endif
 
 #if USE_USART3
-  Queue U3TXB;
-  Queue U3RXB;
+  static Queue U3TXB;
+  Qstatic ueue U3RXB;
 #endif
 
 #if USE_UART4
-  Queue U4TXB;
-  Queue U4RXB;
+  static Queue U4TXB;
+  static Queue U4RXB;
 #endif
 
 #if USE_UART5
-  Queue U5TXB;
-  Queue U5RXB;
+  static Queue U5TXB;
+  static Queue U5RXB;
 #endif
 
 #if USE_USART6
-  Queue U6TXB;
-  Queue U6RXB;
+  static Queue U6TXB;
+  static Queue U6RXB;
 #endif
 
 #if USE_UART7
-  Queue U7TXB;
-  Queue U7RXB;
+  static Queue U7TXB;
+  Qstatic ueue U7RXB;
 #endif
 
 #if USE_UART8
-  Queue U8TXB;
-  Queue U8RXB;
+  static Queue U8TXB;
+  static Queue U8RXB;
 #endif
 
 //USART 보드레이트 설정

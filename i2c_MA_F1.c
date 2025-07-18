@@ -1,13 +1,16 @@
  /*----------------------------------------------------------------------------
-  Project :  STM32F1 I²C Master (Register)
+  Project : STM32F1 I²C Master (Register)
   Author  : Jaesung Oh
+            https://github.com/Jaesung0/STM32_Peripheral
   TEXT Encoding : UTF-8
+  
   매개변수의 DevAddress는 SLA+W 형식
 
   Attention
   This software component is licensed under the BSD 3-Clause License.
   You may not use this file except in compliance with the License.
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+  This software is provided AS-IS.
   ----------------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c_MA_F1.h"

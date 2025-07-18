@@ -11,33 +11,7 @@
  extern "C" {
 #endif
 
-#include "defines.h"
-
-//사용하는 UART 설정
-#ifndef USE_USART1
- #define USE_USART1   0
-#endif
-#ifndef USE_USART2
- #define USE_USART2   0
-#endif
-#ifndef USE_USART3
- #define USE_USART3   0
-#endif
-#ifndef USE_UART4
- #define USE_UART4    0
-#endif
-#ifndef USE_UART5
- #define USE_UART5    0
-#endif
-#ifndef USE_USART6
- #define USE_USART6   0
-#endif
-#ifndef USE_UART7
- #define USE_UART7    0
-#endif
-#ifndef USE_UART8
- #define USE_UART8    0
-#endif
+//#include "main.h"
 
 #define UART_Enable(UARTX)            (UARTX)->CR1 |= 0x00000001
 #define UART_Disable(UARTX)           (UARTX)->CR1 &= ~(0x00000001)
@@ -68,14 +42,6 @@
 #define UART_ClearFlag_TC(UARTX)      (UARTX)->ICR = 0x00000040
 #define UART_TransmitData8(UARTX)     (UARTX)->TDR
 #define UART_ReceiveData8(UARTX)      (UARTX)->RDR
-
-typedef struct _Queue //Queue 구조체 정의
-{
-  uint8_t *buf;
-  volatile uint16_t size;
-  volatile uint16_t front;
-  volatile uint16_t rear;
-}Queue;
 
 void UART_SetBaud(USART_TypeDef *USARTx, uint32_t BaudRate); //UART 보드레이트 설정
 void UART_TXchar(USART_TypeDef *USARTx, char data);   //UART로 1개 문자 전송, 폴링방식
