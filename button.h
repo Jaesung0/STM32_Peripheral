@@ -11,17 +11,15 @@
  extern "C" {
 #endif
 
-typedef enum //_BtnValue_t
+typedef enum
 {
-  BTN_NONE = 0, //
-  BTN_RELEASE,  // 떨어짐
-  BTN_PUSH,     // 눌림
-  BTN_LONG,     // 길게눌림
-  BTN_REPEAT
-}BtnValue_t;
+  KEY_NONE = 0, //
+  KEY_RELEASE,  // 떨어짐
+  KEY_PUSH,     // 눌림
+  KEY_LONG,     // 길게눌림
+}KeyValue_t;
 
-void BTN_TIM10ms_Process(void);//타이머 인터럽트에서 10ms 단위로 실행
-void Button_Loop_Process(void);//main.c 에서 반복실행
+void KEY_TIM10ms_Process(void); //10ms 단위로 실행
 
 #ifdef __cplusplus
 }
