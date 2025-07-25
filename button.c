@@ -14,113 +14,226 @@
 #include <stdio.h>
 #include "main.h"
 #include "button.h"
-#include "uart_F1.h"
-//#include "defines.h"
-//#include "cmd_func.h"
 
-#ifndef BTN_isIN
- #define BTN_isIN()           !LL_GPIO_IsInputPinSet(B1_GPIO_Port, B1_Pin)
+//사용자 include
+//#include "defines.h"
+
+//사용자 define
+#ifndef WKUP_isIN
+ #define WKUP_isIN()        LL_GPIO_IsInputPinSet(WKUP_GPIO_Port, WKUP_Pin)
+#endif
+#ifndef KEY0_isIN
+ #define KEY0_isIN()        !LL_GPIO_IsInputPinSet(KEY0_GPIO_Port, KEY0_Pin)
+#endif
+#ifndef KEY1_isIN
+ #define KEY1_isIN()        !LL_GPIO_IsInputPinSet(KEY1_GPIO_Port, KEY1_Pin)
 #endif
 
-//버튼 재입력 지연시간 (10ms단위)
-#define BTN_DelayTime     100 //1.0초
-//버튼 재입력 반복시간 (10ms단위)
-#define BTN_RepeatTime     50 //0.5초
+#ifndef NUM_OF_KEY
+ #define NUM_OF_KEY          3
+#endif
 
-static volatile BtnValue_t BtnNow, BtnPast = BTN_RELEASE;
-static volatile uint16_t BTN_Cnt;
-static uint8_t BTN_Long;
+#define KEY_LONG_TIME       100 //1초
 
-//10ms주기로 실행, 버튼 입력상태 변동 확인하여 버튼상태 변수값에 저장
-void BTN_TIM10ms_Process(void)
+typedef void (*pfunc)(); //함수 포인터 별칭 정의
+
+typedef struct
 {
-  if( BTN_isIN() )
-  {
-    BTN_Cnt++;
+  uint8_t  FuncEnable;
+  pfunc    pFuncName;
+}KeyEventTableElement_t;
 
-    if(BtnNow == BTN_RELEASE) //Button_Loop_Process 진입전에 버튼이 변경된 경우
-      BTN_Cnt = 0; //RELEASE 가 먼저 처리 되도록 BTN_Cnt 을 0으로
+static volatile uint8_t    KeyINIT;
+static volatile uint8_t    KeyisIn[NUM_OF_KEY];
+static volatile KeyValue_t KeyNow[NUM_OF_KEY], KeyPast[NUM_OF_KEY];
+static volatile uint16_t   KeyCnt[NUM_OF_KEY];
 
-    if( (BTN_Cnt) && (BtnPast == BTN_RELEASE) ) //버튼 눌림
-    {
-      BtnNow = BTN_PUSH;
-    }
-    else if( (BTN_Cnt > BTN_DelayTime) && (BtnPast == BTN_PUSH) ) //반복 지연시간 경과
-    {
-      BtnNow = BTN_LONG;
-    }
-    else if( (BTN_Cnt > (BTN_DelayTime + BTN_RepeatTime)) && (BtnNow == BTN_NONE) ) //반복지연 + 반복주기시간 경과
-    {
-      BtnNow = BTN_REPEAT;
-      //BTN_Cnt = BTN_DelayTime; // 반복지연 직후로 변경 => Button_Loop_Process() 에서 처리
-    }
-
-  }
-  else
-  {
-    if(BtnNow == BTN_PUSH) //Button_Loop_Process 진입전에 버튼이 변경된 경우
-    {
-      BtnNow = BTN_NONE; //20ms 내 눌렀다 놓인것으로 무시
-      BTN_Cnt = 0;
-    }
-
-    if( (BtnPast > BTN_RELEASE) || (BtnNow > BTN_RELEASE))
-    {
-      BtnNow = BTN_RELEASE;
-      BTN_Cnt = 0;
-    }
-  }
+//KEY 에 할당된 'GPIO Read Pin 함수' 리스트를 작성하십시오.
+// LL 드라이버는 'inline function' 으로 구성되어 있기 때문에 '함수 포인터 배열'을 사용할 수 없습니다.
+static void KEY_Table_GPIOpin(void)
+{
+  KeyisIn[0] = (uint8_t)WKUP_isIN();
+  KeyisIn[1] = (uint8_t)KEY0_isIN();
+  KeyisIn[2] = (uint8_t)KEY1_isIN();
 }
 
-//main.c 에서 반복실행
-void Button_Loop_Process(void)
+//KEY '이름' 리스트를 작성하십시오.
+const char *KeyName[NUM_OF_KEY] =
 {
-  BtnValue_t Btn = BtnNow; //인터럽트에서 변경될 수 있는 변수는 복사하여 사용
+  "Key WKUP",
+  "Key 0",
+  "Key 1"
+};
 
-  if(Btn)
+//(반환값과 매개변수가 없는)Event 함수의 프로토타입을 작성하십시오
+static void Event_KeyWKUP_Press(void);
+static void Event_Key0_Press(void);
+static void Event_Key1_Press(void);
+
+//Event_Key_Press 함수 리스트를 작성하십시오.
+static KeyEventTableElement_t EventTable_Key_Press[NUM_OF_KEY] =
+{
+  //실행여부, (반환값과 매개변수가 없는) 함수이름
+  {1,         Event_KeyWKUP_Press},
+  {1,         Event_Key0_Press},
+  {1,         Event_Key1_Press}
+};
+
+//Event_LongKey_Press 함수 리스트를 작성하십시오.
+static KeyEventTableElement_t EventTable_LongKey_Press[NUM_OF_KEY] =
+{
+  //실행여부, (반환값과 매개변수가 없는) 함수이름
+  {0,         NULL},
+  {0,         NULL},
+  {0,         NULL}
+};
+
+//Event_ShortKey_Release 함수 리스트를 작성하십시오.
+static KeyEventTableElement_t EventTable_ShortKey_Release[NUM_OF_KEY] =
+{
+  //실행여부, (반환값과 매개변수가 없는) 함수이름
+  {0,         NULL},
+  {0,         NULL},
+  {0,         NULL}
+};
+
+//Event_LongKey_Release 이벤트 함수 리스트를 작성하십시오.
+static KeyEventTableElement_t EventTable_LongKey_Release[NUM_OF_KEY] =
+{
+  //실행여부, (반환값과 매개변수가 없는) 함수이름
+  {0,         NULL},
+  {0,         NULL},
+  {0,         NULL}
+};
+
+//(반환값과 매개변수가 없는)Event 함수를 작성하십시오
+static void Event_KeyWKUP_Press(void)
+{
+
+}
+
+static void Event_Key0_Press(void)
+{
+
+}
+static void Event_Key1_Press(void)
+{
+
+}
+
+//10ms주기로 실행, KEY 입력상태 변동 확인하여 이벤트 수행
+void KEY_TIM10ms_Process(void)
+{
+  if(!KeyINIT)
   {
-    //del_CmdLine();
-    printf(" Key: ");
-    switch(Btn)
+    for(uint8_t i=0; i<NUM_OF_KEY; i++)
     {
-      case BTN_PUSH:
-        printf("Pressing");
-        //Event_BTN_Press();
-        break;
-
-      case BTN_LONG:
-        BTN_Long = 1;
-        printf("Long Pressing");
-        //Event_BTN_LongKey_Press();
-        break;
-
-      case BTN_REPEAT:
-        BTN_Cnt = BTN_DelayTime;
-        printf("Long Repeat");
-        //Event_BTN_Repeat();
-        break;
-
-      case BTN_RELEASE:
-        if(BTN_Long)
-        {
-          BTN_Long = 0;
-          printf("Released(Long Key)");
-          //Event_BTN_LongKey_Release();
-        }
-        else
-        {
-          printf("Released(Short Key)");
-          //Event_BTN_ShortKey_Release();
-        }
-        break;
-
-      default:
-        break;
+      KeyNow[i] = KEY_NONE;
+      KeyPast[i] = KEY_RELEASE;
+      KeyCnt[i] = 0;
     }
-    //printf("\r\ncmd>");
-    //print_CmdBuf();
 
-    BtnPast = Btn;
-    BtnNow = BTN_NONE;
+    KeyINIT = 1;
+  }
+  
+  //GPIO Pin 상태를 확인
+  KEY_Table_GPIOpin();
+  
+  //KEY 변동 확인
+  for(uint8_t i=0; i<NUM_OF_KEY; i++)
+  {
+    if( KeyisIn[i] )
+    {
+      if( (KeyNow[i] != KEY_LONG) && (KeyPast[i] != KEY_LONG) )
+      {
+        KeyCnt[i]++;
+      }
+
+      if(KeyNow[i] == KEY_RELEASE) //Button_Loop_Process 진입전에 버튼이 변경된 경우
+      {
+        KeyCnt[i] = 0; //RELEASE 가 먼저 처리 되도록 KeyCnt[i] 을 0으로
+      }
+
+      if( (KeyCnt[i]) && (KeyPast[i] == KEY_RELEASE) ) //버튼 눌림
+      {
+        KeyNow[i] = KEY_PUSH;
+      }
+      else if( (KeyCnt[i] > KEY_LONG_TIME) && (KeyPast[i] == KEY_PUSH) )
+      {
+        KeyNow[i] = KEY_LONG;
+      }
+    }
+    else
+    {
+      if(KeyNow[i] == KEY_PUSH) //Button_Loop_Process 진입전에 버튼이 변경된 경우
+      {
+        KeyNow[i] = KEY_NONE; //20ms 내 눌렀다 놓인것으로 무시
+        KeyCnt[i] = 0;
+      }
+
+      if( (KeyPast[i] > KEY_RELEASE) || (KeyNow[i] > KEY_RELEASE))
+      {
+        KeyNow[i] = KEY_RELEASE;
+        KeyCnt[i] = 0;
+      }
+    }
+  }
+
+  //이벤트 수행
+  for(uint8_t i=0; i<NUM_OF_KEY; i++)
+  {
+    if(KeyNow[i])
+    {
+      printf(" %s: ", KeyName[i]);
+      
+      switch(KeyNow[i])
+      {
+        case KEY_PUSH:
+          printf("Pressing");
+        
+          if(EventTable_Key_Press[i].FuncEnable)
+          {
+            EventTable_Key_Press[i].pFuncName();
+          }
+          break;
+
+        case KEY_LONG:
+          printf("Long Pressing");
+        
+          if(EventTable_LongKey_Press[i].FuncEnable)
+          {
+            EventTable_LongKey_Press[i].pFuncName();
+          }
+          break;
+
+        case KEY_RELEASE:
+          if(KeyPast[i] == KEY_PUSH)
+          {
+            printf("Released(Short Key)");
+
+            if(EventTable_ShortKey_Release[i].FuncEnable)
+            {
+              EventTable_ShortKey_Release[i].pFuncName();
+            }
+          }
+          else//if(KeyPast[i] == KEY_LONG)
+          {
+            printf("Released(Long Key)");
+
+            if(EventTable_LongKey_Release[i].FuncEnable)
+            {
+              EventTable_LongKey_Release[i].pFuncName();
+            }
+          }
+          break;
+
+        default:
+          break;
+      }
+      printf("\r\n");
+
+      KeyPast[i] = KeyNow[i];
+      KeyNow[i] = KEY_NONE;
+    }
   }
 }
