@@ -1,0 +1,167 @@
+/*----------------------------------------------------------------------------
+  Project : STM32 bxCAN
+  Author  : Jaesung Oh
+            https://github.com/Jaesung0/STM32_Peripheral
+  TEXT Encoding : UTF-8
+  
+  Attention
+  This software component is licensed under the BSD 3-Clause License.
+  You may not use this file except in compliance with the License.
+  You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
+  This software is provided AS-IS.
+  ----------------------------------------------------------------------------*/
+#include "main.h"
+#include "bxcan.h"
+
+//사용자 define include
+//#include "User_define.h"
+
+typedef struct
+{
+  uint32_t *Tick;
+  uint32_t *TimeOut;
+  uint8_t  *Type;
+  uint32_t *ID;
+  uint8_t  *Length;
+  uint8_t  (*data)[8];
+  uint8_t  front;
+  uint8_t  rear;
+}CAN_TxQueue_t;
+
+typedef struct
+{
+  uint8_t  *Channel;
+  uint32_t *Tick;
+  uint8_t  *Type;
+  uint32_t *ID;
+  uint8_t  *Length;
+  uint8_t  (*data)[8];
+  uint8_t  front;
+  uint8_t  rear;
+}CAN_RxQueue_t;
+
+#ifndef USE_CAN1
+ #define USE_CAN1   1
+#endif
+
+#ifndef USE_CAN2
+ #define USE_CAN2   1
+#endif
+
+#ifndef USE_CAN3
+ #define USE_CAN3   1
+#endif
+
+#ifndef CAN_RX_BUF_SIZE
+ #define CAN_RX_BUF_SIZE  16
+#endif
+
+#if USE_CAN1
+ #ifndef CAN1_TX_BUF_SIZE
+  #define CAN1_TX_BUF_SIZE  8
+ #endif
+ #if USE_CAN2
+  #ifndef CAN2_TX_BUF_SIZE
+   #define CAN2_TX_BUF_SIZE  8
+  #endif
+ #endif
+#endif
+
+#if USE_CAN3
+ #ifndef CAN3_TX_BUF_SIZE
+  #define CAN3_TX_BUF_SIZE  8
+ #endif
+#endif
+
+
+static uint32_t CAN_RxTick[CAN_RX_BUF_SIZE];
+static uint32_t CAN_RxID[CAN_RX_BUF_SIZE];
+static uint8_t  CAN_RxChannel[CAN_RX_BUF_SIZE];
+static uint8_t  CAN_RxType[CAN_RX_BUF_SIZE];
+static uint8_t  CAN_RxLength[CAN_RX_BUF_SIZE];
+static uint8_t  CAN_RxData[CAN_RX_BUF_SIZE][8];
+static CAN_RxQueue_t CAN_RxQueue = {CAN_RxChannel, CAN_RxTick, CAN_RxType, CAN_RxID, CAN_RxChannel, CAN_RxData, 0, 0};
+
+#if USE_CAN1
+ extern CAN_HandleTypeDef hcan1;
+ static uint32_t CAN1_TxTick[CAN1_TX_BUF_SIZE];
+ static uint32_t CAN1_TxTimeOut[CAN1_TX_BUF_SIZE];
+ static uint32_t CAN1_TxID[CAN1_TX_BUF_SIZE];
+ static uint8_t  CAN1_TxType[CAN1_TX_BUF_SIZE];
+ static uint8_t  CAN1_TxLength[CAN1_TX_BUF_SIZE];
+ static uint8_t  CAN1_TxData[CAN1_TX_BUF_SIZE][8];
+ static CAN_TxQueue_t CAN1_TxQueue = {CAN1_TxTick, CAN1_TxTimeOut, CAN1_TxType, CAN1_TxID, CAN1_TxLength, CAN1_TxData, 0, 0};
+ #if USE_CAN2
+  extern CAN_HandleTypeDef hcan2;
+  static uint32_t CAN2_TxTick[CAN2_TX_BUF_SIZE];
+  static uint32_t CAN2_TxTimeOut[CAN2_TX_BUF_SIZE];
+  static uint32_t CAN2_TxID[CAN2_TX_BUF_SIZE];
+  static uint8_t  CAN2_TxType[CAN2_TX_BUF_SIZE];
+  static uint8_t  CAN2_TxLength[CAN2_TX_BUF_SIZE];
+  static uint8_t  CAN2_TxData[CAN2_TX_BUF_SIZE][8];
+  static CAN_TxQueue_t CAN2_TxQueue = {CAN2_TxTick, CAN2_TxTimeOut, CAN2_TxType, CAN2_TxID, CAN2_TxLength, CAN2_TxData, 0, 0};
+ #endif
+#endif
+
+#if USE_CAN3
+ extern CAN_HandleTypeDef hcan3;
+ static uint32_t CAN3_TxTick[CAN3_TX_BUF_SIZE];
+ static uint32_t CAN3_TxTimeOut[CAN3_TX_BUF_SIZE];
+ static uint32_t CAN3_TxID[CAN3_TX_BUF_SIZE];
+ static uint8_t  CAN3_TxType[CAN3_TX_BUF_SIZE];
+ static uint8_t  CAN3_TxLength[CAN3_TX_BUF_SIZE];
+ static uint8_t  CAN3_TxData[CAN3_TX_BUF_SIZE][8];
+ static CAN_TxQueue_t CAN3_TxQueue = {CAN3_TxTick, CAN3_TxTimeOut, CAN3_TxType, CAN3_TxID, CAN3_TxLength, CAN3_TxData, 0, 0};
+#endif
+
+void BXCAN_FilterConfig_RxAllID(void)
+{
+  CAN_FilterTypeDef sFilterConfig;
+
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
+  sFilterConfig.FilterIdHigh = 0x0000;
+  sFilterConfig.FilterIdLow = 0x0000;
+  sFilterConfig.FilterMaskIdHigh = 0x0000;
+  sFilterConfig.FilterMaskIdLow = 0x0000;
+  sFilterConfig.FilterFIFOAssignment = CAN_RX_FIFO0;
+  sFilterConfig.FilterActivation = ENABLE;
+ #if USE_CAN1
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.SlaveStartFilterBank = 14;
+  HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig);
+  
+  #if USE_CAN2
+   sFilterConfig.FilterBank = 14;
+   HAL_CAN_ConfigFilter(&hcan2, &sFilterConfig);
+  #endif
+ #endif
+
+ #if USE_CAN3
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.SlaveStartFilterBank = 0;
+  HAL_CAN_ConfigFilter(&hcan3, &sFilterConfig);
+ #endif
+}
+
+/* [CAN Rx FIFO 0 message pending callback] */
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef* hcan)
+{
+  switch( (uint32_t)hcan->Instance )
+  {
+    case (uint32_t)CAN1:
+      //HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &gCAN1_RxHeader, gCAN1_RxData);
+      break;
+
+    case (uint32_t)CAN2:
+    
+      break;
+
+    case (uint32_t)CAN3:
+    
+      break;
+      
+    default:
+      break;
+  }
+}

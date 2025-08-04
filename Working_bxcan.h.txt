@@ -1,0 +1,27 @@
+/*----------------------------------------------------------------------------
+  Project : STM32 bxCAN
+  Author  : Jaesung Oh
+  TEXT Encoding : UTF-8
+  ----------------------------------------------------------------------------*/
+
+/* Define to prevent recursive inclusion */
+#ifndef __BXCAN_H
+#define __BXCAN_H
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum
+{
+  StandardRemote = 0x00,
+  StandardData   = 0x01,
+  ExtendedRemote = 0x02,
+  ExtendedData   = 0x03
+} CAN_Type_t;
+
+void BXCAN_FilterConfig_RxAllID(void);
+
+#ifdef __cplusplus
+}
+#endif
+#endif /*__ BXCAN_H */
