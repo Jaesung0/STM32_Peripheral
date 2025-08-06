@@ -13,13 +13,14 @@ extern "C" {
 
 typedef enum
 {
-  StandardRemote = 0x00,
-  StandardData   = 0x01,
-  ExtendedRemote = 0x02,
-  ExtendedData   = 0x03
+  StandardData   = 0x00,
+  StandardRemote = 0x02,
+  ExtendedData   = 0x04,
+  ExtendedRemote = 0x06
 } CAN_Type_t;
 
 void BXCAN_FilterConfig_RxAllID(void);
+uint8_t BXCAN_RxMessagePush(uint8_t Channel, uint8_t Type, uint32_t ID, uint8_t Length, uint8_t *data);
 
 #ifdef __cplusplus
 }
