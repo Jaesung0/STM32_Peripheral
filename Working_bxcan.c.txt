@@ -40,6 +40,7 @@ typedef struct
   uint8_t  rear;
 }CAN_RxQueue_t;
 
+//사용하는 CAN 설정
 #ifndef USE_CAN1
  #define USE_CAN1   1
 #endif
@@ -52,10 +53,12 @@ typedef struct
  #define USE_CAN3   1
 #endif
 
+//CAN 수신 버퍼크기 설정
 #ifndef CAN_RX_BUF_SIZE
  #define CAN_RX_BUF_SIZE  16
 #endif
 
+//CAN 송신 버퍼크기 설정
 #if USE_CAN1
  #ifndef CAN1_TX_BUF_SIZE
   #define CAN1_TX_BUF_SIZE  8
@@ -73,14 +76,14 @@ typedef struct
  #endif
 #endif
 
-
+//CAN Rx Queue
 static uint32_t CAN_RxTick[CAN_RX_BUF_SIZE];
 static uint32_t CAN_RxID[CAN_RX_BUF_SIZE];
 static uint8_t  CAN_RxChannel[CAN_RX_BUF_SIZE];
 static uint8_t  CAN_RxType[CAN_RX_BUF_SIZE];
 static uint8_t  CAN_RxLength[CAN_RX_BUF_SIZE];
 static uint8_t  CAN_RxData[CAN_RX_BUF_SIZE][8];
-static CAN_RxQueue_t CAN_RxQueue = {CAN_RxChannel, CAN_RxTick, CAN_RxType, CAN_RxID, CAN_RxChannel, CAN_RxData, 0, 0};
+static CAN_RxQueue_t CAN_RxQueue = {CAN_RxChannel, CAN_RxTick, CAN_RxType, CAN_RxID, CAN_RxLength, CAN_RxData, 0, 0};
 
 #if USE_CAN1
  extern CAN_HandleTypeDef hcan1;
@@ -144,24 +147,118 @@ void BXCAN_FilterConfig_RxAllID(void)
  #endif
 }
 
+//반환값: 성공0 / 실패1
+uint8_t BXCAN_RxMessagePush(uint8_t Channel, uint8_t Type, uint32_t ID, uint8_t Length, uint8_t *data)
+{
+  //큐 가득 참
+  if((CAN_RxQueue.rear+1)%CAN_RX_BUF_SIZE == CAN_RxQueue.front)
+    return ERROR;
+
+  if(Length > 8)
+    return ERROR;
+
+  switch(Type)
+  {
+    case StandardData:
+    case StandardRemote:
+      if(ID > 0x7FF)
+        return ERROR;
+      else
+        CAN_RxQueue.ID[CAN_RxQueue.rear] = ID;
+
+      //데이터 초기화
+      for(uint8_t i = 0; i < 8; i++)
+        CAN_RxQueue.data[CAN_RxQueue.rear][i] = 0;
+
+      if(Type == StandardRemote)
+        break;
+
+      for(uint8_t i = 0; i < Length; i++)
+        CAN_RxQueue.data[CAN_RxQueue.rear][i] = data[i];
+
+      break;
+
+    case ExtendedData:
+    case ExtendedRemote:
+      if(ID > 0x1FFFFFFF)
+        return ERROR;
+      else
+        CAN_RxQueue.ID[CAN_RxQueue.rear] = ID;
+
+      //데이터 초기화
+      for(uint8_t i = 0; i < 8; i++)
+        CAN_RxQueue.data[CAN_RxQueue.rear][i] = 0;
+
+      if(Type == ExtendedRemote)
+        break;
+
+      for(uint8_t i = 0; i < Length; i++)
+        CAN_RxQueue.data[CAN_RxQueue.rear][i] = data[i];
+
+      break;
+
+    default:
+      return ERROR;
+  }
+
+  CAN_RxQueue.Channel[CAN_RxQueue.rear] = Channel;
+  CAN_RxQueue.Tick[CAN_RxQueue.rear] = HAL_GetTick();
+  CAN_RxQueue.Type[CAN_RxQueue.rear] = Type;
+  CAN_RxQueue.Length[CAN_RxQueue.rear] = Length;
+  CAN_RxQueue.rear = (CAN_RxQueue.rear+1)%CAN_RX_BUF_SIZE;
+
+  return SUCCESS;
+}
+
+
 /* [CAN Rx FIFO 0 message pending callback] */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef* hcan)
 {
+  CAN_RxHeaderTypeDef CAN_RxHeader = {0, };
+  uint32_t CAN_Id;
+  uint8_t CAN_RxData[8] = {0, };
+  uint8_t CAN_Channal;
+  HAL_StatusTypeDef state;
+
   switch( (uint32_t)hcan->Instance )
   {
+   #if USE_CAN1
     case (uint32_t)CAN1:
-      //HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &gCAN1_RxHeader, gCAN1_RxData);
+      CAN_Channal = 1;
       break;
-
+    #if USE_CAN2
     case (uint32_t)CAN2:
-    
+      CAN_Channal = 2;
       break;
+    #endif
+   #endif
 
+   #if USE_CAN3
     case (uint32_t)CAN3:
-    
+      CAN_Channal = 3;
       break;
-      
+   #endif
+
     default:
+      CAN_Channal = 0;
       break;
+  }
+
+  state = HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &CAN_RxHeader, CAN_RxData);
+
+  if((state == HAL_OK) && CAN_Channal)
+  {
+    if(CAN_RxHeader.IDE)
+      CAN_Id = CAN_RxHeader.ExtId;
+    else
+      CAN_Id = CAN_RxHeader.StdId;
+
+    if(CAN_RxHeader.RTR)
+    {
+      for(uint8_t i = 0; i < 8; i++)
+        CAN_RxData[i] = 0;
+    }
+
+    BXCAN_RxMessagePush(CAN_Channal, (CAN_RxHeader.IDE | CAN_RxHeader.RTR), CAN_Id, CAN_RxHeader.DLC, CAN_RxData);
   }
 }
