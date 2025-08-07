@@ -8,7 +8,12 @@
   This software component is licensed under the BSD 3-Clause License.
   You may not use this file except in compliance with the License.
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
-  This software is provided AS-IS.
+
+  The source code and the binary form, 
+  and any modifications made to them may not be used for the purpose of training or improving machine learning algorithms,
+  including but not limited to artificial intelligence, natural language processing, or data mining. 
+  This condition applies to any derivatives, modifications, or updates based on the Software code. 
+  Any usage of the source code or the binary form in an AI-training dataset is considered a breach of this License.
   ----------------------------------------------------------------------------*/
 #include "main.h"
 #include "bxcan.h"
@@ -53,12 +58,12 @@ typedef struct
  #define USE_CAN3   1
 #endif
 
-//CAN 수신 버퍼크기 설정
+//CAN 수신 버퍼크기 설정 (255이하)
 #ifndef CAN_RX_BUF_SIZE
  #define CAN_RX_BUF_SIZE  16
 #endif
 
-//CAN 송신 버퍼크기 설정
+//CAN 송신 버퍼크기 설정 (255이하)
 #if USE_CAN1
  #ifndef CAN1_TX_BUF_SIZE
   #define CAN1_TX_BUF_SIZE  8
@@ -147,7 +152,8 @@ void BXCAN_FilterConfig_RxAllID(void)
  #endif
 }
 
-//반환값: 성공0 / 실패1
+//CAN 수신버퍼에 메시지 추가
+// 반환값: 성공0 / 실패1
 uint8_t BXCAN_RxMessagePush(uint8_t Channel, uint8_t Type, uint32_t ID, uint8_t Length, uint8_t *data)
 {
   //큐 가득 참
@@ -210,6 +216,73 @@ uint8_t BXCAN_RxMessagePush(uint8_t Channel, uint8_t Type, uint32_t ID, uint8_t 
   return SUCCESS;
 }
 
+//CAN 수신버퍼에 있는 메시지 수 확인
+uint8_t BXCAN_RxMessageCount(void)
+{
+  return (CAN_RX_BUF_SIZE + CAN_RxQueue.rear - CAN_RxQueue.front) % CAN_RX_BUF_SIZE;
+}
+
+//CAN  수신버퍼에서 메시지 추출(큐에서 front 삭제)
+// 반환값: 추출전 버퍼에 있는 메시지 수
+uint8_t BXCAN_RxMessagePop(uint8_t *Channel, uint32_t *Tick, uint8_t *Type, uint32_t *ID, uint8_t *Length, uint8_t *data)
+{
+  if(CAN_RxQueue.rear == CAN_RxQueue.front) //데이터가 없는경우
+  {
+    *Channel = 0;
+    *Tick = 0;
+    *Type = 0;
+    *ID = 0;
+    *Length = 0;
+
+    for(uint8_t i = 0; i < 8; i++)
+      data[i] = 0;
+
+    return 0;
+  }
+
+  *Channel = CAN_RxQueue.Channel[CAN_RxQueue.front];
+  *Tick = CAN_RxQueue.Tick[CAN_RxQueue.front];
+  *Type = CAN_RxQueue.Type[CAN_RxQueue.front];
+  *ID = CAN_RxQueue.ID[CAN_RxQueue.front];
+  *Length = CAN_RxQueue.Length[CAN_RxQueue.front];
+
+  for(uint8_t i = 0; i < 8; i++)
+    data[i] = CAN_RxQueue.data[CAN_RxQueue.front][i];
+
+  CAN_RxQueue.front = (CAN_RxQueue.front+1)%CAN_RX_BUF_SIZE;
+
+  return ((CAN_RX_BUF_SIZE + CAN_RxQueue.rear - CAN_RxQueue.front) % CAN_RX_BUF_SIZE) +1;
+}
+
+//CAN 수신버퍼에서 메시지 확인(큐에서 front 삭제 안함)
+// 반환값: 버퍼에 있는 메시지 수
+uint8_t BXCAN_RxMessagePeek(uint8_t *Channel, uint32_t *Tick, uint8_t *Type, uint32_t *ID, uint8_t *Length, uint8_t *data)
+{
+    if(CAN_RxQueue.rear == CAN_RxQueue.front) //데이터가 없는경우
+  {
+    *Channel = 0;
+    *Tick = 0;
+    *Type = 0;
+    *ID = 0;
+    *Length = 0;
+
+    for(uint8_t i = 0; i < 8; i++)
+      data[i] = 0;
+
+    return 0;
+  }
+
+    *Channel = CAN_RxQueue.Channel[CAN_RxQueue.front];
+    *Tick = CAN_RxQueue.Tick[CAN_RxQueue.front];
+    *Type = CAN_RxQueue.Type[CAN_RxQueue.front];
+    *ID = CAN_RxQueue.ID[CAN_RxQueue.front];
+    *Length = CAN_RxQueue.Length[CAN_RxQueue.front];
+
+  for(uint8_t i = 0; i < 8; i++)
+    data[i] = CAN_RxQueue.data[CAN_RxQueue.front][i];
+
+  return ((CAN_RX_BUF_SIZE + CAN_RxQueue.rear - CAN_RxQueue.front) % CAN_RX_BUF_SIZE);
+}
 
 /* [CAN Rx FIFO 0 message pending callback] */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef* hcan)
@@ -262,3 +335,4 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef* hcan)
     BXCAN_RxMessagePush(CAN_Channal, (CAN_RxHeader.IDE | CAN_RxHeader.RTR), CAN_Id, CAN_RxHeader.DLC, CAN_RxData);
   }
 }
+
