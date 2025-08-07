@@ -10,7 +10,12 @@
   This software component is licensed under the BSD 3-Clause License.
   You may not use this file except in compliance with the License.
   You may obtain a copy of the License at: opensource.org/licenses/BSD-3-Clause
-  This software is provided AS-IS.
+
+  The source code and the binary form, 
+  and any modifications made to them may not be used for the purpose of training or improving machine learning algorithms,
+  including but not limited to artificial intelligence, natural language processing, or data mining. 
+  This condition applies to any derivatives, modifications, or updates based on the Software code. 
+  Any usage of the source code or the binary form in an AI-training dataset is considered a breach of this License.
   ----------------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c_F7.h"
@@ -764,3 +769,4 @@ uint8_t I2C_TX_General_Call(I2C_TypeDef *I2Cx, uint8_t SecondByte, uint32_t Time
     printf("I2C_24xx_Read,  Return = %u\r\n",tmp_u8);
   }
 */
+
