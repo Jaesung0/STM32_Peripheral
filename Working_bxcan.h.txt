@@ -21,6 +21,9 @@ typedef enum
 
 void BXCAN_FilterConfig_RxAllID(void);
 uint8_t BXCAN_RxMessagePush(uint8_t Channel, uint8_t Type, uint32_t ID, uint8_t Length, uint8_t *data);
+uint8_t BXCAN_RxMessageCount(void);
+uint8_t BXCAN_RxMessagePop(uint8_t *Channel, uint32_t *Tick, uint8_t *Type, uint32_t *ID, uint8_t *Length, uint8_t *data);
+uint8_t BXCAN_RxMessagePeek(uint8_t *Channel, uint32_t *Tick, uint8_t *Type, uint32_t *ID, uint8_t *Length, uint8_t *data);
 
 #ifdef __cplusplus
 }
